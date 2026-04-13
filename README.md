@@ -83,6 +83,33 @@ cp $(brew --prefix)/share/earlbear/.env.example ~/.config/earlbear/.env
 | Devcontainer | `devcontainer/` | Linux (Claude cowork) | Claude Code sandbox with EarlBear tooling |
 | Validation | `validation/` | Docker / Tart VM | Regression test suite |
 
+## Cowork devcontainer (Claude Code sandbox)
+
+The `devcontainer/` directory provides a pre-built Linux environment with EarlBear tools installed, intended for use as a Claude Code cowork session.
+
+**Requirements:** Apple Silicon, macOS 26+, [apple/container](https://github.com/apple/container/releases)
+
+```bash
+# 1. Install apple/container
+#    Download the installer from https://github.com/apple/container/releases
+#    Run the .pkg installer, then:
+container system start
+
+# 2. Build the cowork image (from repo root — takes ~10min first time)
+container build -f devcontainer/Dockerfile -t earlbear-cowork:local .
+
+# 3. Run a cowork session
+container run --rm -it \
+  --volume ~/.config/earlbear:/home/linuxbrew/.config/earlbear:ro \
+  earlbear-cowork:local \
+  bash
+
+# 4. Or run the full regression test
+make validate-cowork
+```
+
+Inside the container, `ebdeck` and `earlbear-plugins` are pre-installed. Credentials are mounted read-only from `~/.config/earlbear/.env` on your Mac.
+
 ## Development
 
 ```bash
@@ -91,8 +118,9 @@ make sync-sources
 
 # Run validation suite
 make validate-audit    # ~30s  — brew audit/style in Docker
-make validate-docker   # ~5min — brew install in Docker
+make validate-docker   # ~5min — brew install in Docker (Linux x86_64)
 make validate-smoke    # ~10s  — smoke test local installs
+make validate-cowork   # ~10min — cowork devcontainer (Apple Silicon + macOS 26+)
 
 # Release
 make bump-and-release VERSION=1.0.1
