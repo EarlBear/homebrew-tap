@@ -55,6 +55,16 @@ make bump-and-release VERSION=1.0.1
 | 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 
+## Skills
+
+Three skills cover the common tap operations. Invoke with `/skill-name`.
+
+| Skill | Description |
+|---|---|
+| `/add-formula` | Scaffold a new formula (Docker-wrapped, Python venv, or script). Includes templates, PyPI resource lookup steps, and gotchas from ebdeck. |
+| `/release` | Full release flow: sync sources → validate → tag → push → patch sha256. |
+| `/sync` | Sync `src/` from sibling repos, report what changed, run audit tier. |
+
 ## Secrets strategy
 
 See plan: `.claude/plans/homebrew-tap-setup.md` § Secrets strategy.
