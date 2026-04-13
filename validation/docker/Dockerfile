@@ -1,25 +1,27 @@
 FROM homebrew/brew:latest
 
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Copy entire tap
+# Copy tap (excluding cache/build artifacts via .dockerignore)
 COPY . /tmp/tap/
 
-# Patch formula URLs to point at the local tap archive (avoids network tarball download)
-# Creates a local archive from the tap source, then patches all formula urls + sha256
-RUN cd /tmp && \
-    tar -czf tap-v1.0.0.tar.gz -C /tmp tap && \
-    LOCAL_SHA=$(sha256sum /tmp/tap-v1.0.0.tar.gz | awk '{print $1}') && \
-    for f in /tmp/tap/Formula/*.rb; do \
+# Patch formula URLs to point at a local tap archive (avoids network tarball download).
+# Use Python to patch files as root isn't available; write to writable /home/linuxbrew
+USER root
+RUN cp -r /tmp/tap /home/linuxbrew/tap && chown -R linuxbrew:linuxbrew /home/linuxbrew/tap
+USER linuxbrew
+
+RUN cd /home/linuxbrew && \
+    tar -czf tap-v1.0.0.tar.gz -C /home/linuxbrew tap && \
+    LOCAL_SHA=$(sha256sum /home/linuxbrew/tap-v1.0.0.tar.gz | awk '{print $1}') && \
+    for f in /home/linuxbrew/tap/Formula/*.rb; do \
       sed -i \
-        -e "s|url \"https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///tmp/tap-v1.0.0.tar.gz\"|g" \
+        -e "s|url \"https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
         -e "s|sha256 \"0000000000000000000000000000000000000000000000000000000000000000\"|sha256 \"$LOCAL_SHA\"|g" \
         "$f"; \
     done && \
     echo "Patched formulas with local URL sha256=$LOCAL_SHA"
 
 # Tap locally with patched formulas
-RUN brew tap bytesofpurpose/earlbear /tmp/tap
+RUN brew tap bytesofpurpose/earlbear /home/linuxbrew/tap
 
 # Install ebdeck (Python venv formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/ebdeck
