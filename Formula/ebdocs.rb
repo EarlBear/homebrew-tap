@@ -1,12 +1,9 @@
 class Ebdocs < Formula
-  desc "EarlBear Google Docs CLI — Docker-wrapped ebdocs"
+  desc "EarlBear Google Docs CLI - Docker-wrapped ebdocs"
   homepage "https://github.com/bytesofpurpose/homebrew-earlbear"
   url "https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
-  version "1.0.0"
-
-  bottle :unneeded
 
   depends_on "docker"
 
@@ -19,7 +16,7 @@ class Ebdocs < Formula
     if which("docker")
       system "docker", "build", "-t", "ebdocs", "-q", libexec/"ebdocs"
     else
-      opoo "docker not found — run `docker build -t ebdocs #{libexec}/ebdocs` after installing Docker"
+      opoo "docker not found - run `docker build -t ebdocs #{libexec}/ebdocs` after installing Docker"
     end
   end
 

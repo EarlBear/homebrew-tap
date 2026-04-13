@@ -1,12 +1,9 @@
 class EarlbearPlugins < Formula
-  desc "EarlBear Claude plugin marketplace — installs all earlbear Claude skills"
+  desc "EarlBear Claude plugin marketplace - installs all earlbear Claude skills"
   homepage "https://github.com/bytesofpurpose/homebrew-earlbear"
   url "https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
-  version "1.0.0"
-
-  bottle :unneeded
 
   def install
     libexec.install "scripts/install-plugins.sh"
@@ -18,7 +15,8 @@ class EarlbearPlugins < Formula
     if which("claude")
       system "bash", libexec/"install-plugins.sh", libexec/"marketplace"
     else
-      opoo "claude CLI not found. After installing Claude Code, run:\n  bash #{libexec}/install-plugins.sh #{libexec}/marketplace"
+      opoo "claude CLI not found. After installing Claude Code, run:\n  " \
+           "bash #{libexec}/install-plugins.sh #{libexec}/marketplace"
     end
   end
 
