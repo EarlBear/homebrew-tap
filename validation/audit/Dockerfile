@@ -1,4 +1,4 @@
-FROM homebrew/brew:latest
+FROM --platform=linux/amd64 homebrew/brew:latest
 
 # Copy tap into image
 COPY . /tmp/tap/

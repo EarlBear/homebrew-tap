@@ -1,4 +1,4 @@
-FROM homebrew/brew:latest
+FROM --platform=linux/amd64 homebrew/brew:latest
 
 # Copy tap (excluding cache/build artifacts via .dockerignore)
 COPY . /tmp/tap/
