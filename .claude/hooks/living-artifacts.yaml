@@ -1,0 +1,95 @@
+# Living-documents reminder rules for the earlbear-homebrew tap.
+#
+# The Stop hook (.claude/hooks/check-living-artifacts.py) reads this file at
+# end-of-turn, walks `git diff --name-only HEAD` + untracked files, matches
+# changed paths against `when_changed` globs, and prints a reminder block to
+# stdout. Claude Code appends stdout to the conversation as additional context,
+# so Claude sees the checklist and can act on it before stopping.
+#
+# Schema:
+#   triggers:
+#     - when_changed: <glob pattern relative to repo root>
+#       remind:
+#         - <reminder string>
+
+triggers:
+  # --- Formula changes ---
+  - when_changed: "Formula/*.rb"
+    remind:
+      - "Run `make validate-audit` to catch Ruby syntax and Homebrew policy violations before committing."
+      - "If the formula URL or sha256 changed, verify the Dockerfile sha256 patch still targets the right line (the awk pattern matches `url \"file://...\"` + next sha256 line — not resource sha256s)."
+      - "If adding or removing a formula, update the formula status table in README.md."
+
+  - when_changed: "Formula/*.rb"
+    remind:
+      - "If this is a Python-venv formula: verify ALL runtime deps from pyproject.toml are declared as `resource` blocks. `pip_install_and_link` has no network access in Docker — missing resources fail silently at audit time but hard at install time."
+      - "If this is a Python-venv formula: `virtualenv_create` second arg must be the binary name (`python3.11`), NOT the formula name (`python@3.11`)."
+      - "If typer or any package that imports `typing_extensions` at module load is a dep, add `typing-extensions` as an explicit resource even if it's not in `[dependencies]`."
+
+  # --- Resource sha256s (PyPI package hashes in formulas) ---
+  - when_changed: "Formula/*.rb"
+    remind:
+      - "If you updated a resource URL or sha256: verify the hash is the sdist (.tar.gz) sha256 from files.pythonhosted.org, not the wheel hash. Run `shasum -a 256 <downloaded>.tar.gz` to confirm."
+      - "If you bumped a resource version: check whether its own dependencies changed (e.g. hatchling requires packaging + pathspec + pluggy + trove-classifiers — all must be bumped together)."
+
+  # --- Dockerfile changes ---
+  - when_changed: "validation/docker/Dockerfile"
+    remind:
+      - "The awk sha256 patch replaces only the formula-level sha256 (the line immediately after `url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"`). Verify it does NOT touch resource sha256s."
+      - "If you added a new formula install step, add a matching smoke test (`test -x $(brew --prefix)/bin/<name>`) before the final `✓ Docker validation complete` line."
+      - "Run `make validate-docker` to confirm the build still passes end-to-end."
+
+  # --- Wrapper scripts ---
+  - when_changed: "wrappers/**/wrapper.sh"
+    remind:
+      - "Re-run `make validate-docker` — wrapper scripts are copied into libexec at install time and the smoke test exercises the binary path."
+      - "If the wrapper reads new env vars from `~/.config/earlbear/.env`, update `scripts/env.example` and `scripts/setup-env.sh` to prompt for them."
+
+  # --- Source sync ---
+  - when_changed: "src/**"
+    remind:
+      - "Files under `src/` are managed by `make sync-sources` — do not hand-edit them. If you changed something here intentionally, update the source in the sibling repo and re-sync."
+      - "If pyproject.toml dependencies changed in src/<cli>/, update the corresponding resource blocks in Formula/<cli>.rb and re-run `make validate-docker`."
+
+  # --- Scripts (setup-env / env.example) ---
+  - when_changed: "scripts/setup-env.sh"
+    remind:
+      - "The `earlbear` meta-formula installs this as `earlbear-setup` — re-run `make validate-docker` to confirm the install path still works."
+      - "If you added new credential prompts, mirror them into `scripts/env.example`."
+
+  - when_changed: "scripts/env.example"
+    remind:
+      - "If you added new keys, update `scripts/setup-env.sh` to prompt for them."
+      - "The `earlbear` meta-formula copies this to `$(brew --prefix)/share/earlbear/.env.example` — verify the caveats block in `Formula/earlbear.rb` still references the right keys."
+
+  # --- Release workflow ---
+  - when_changed: "Makefile"
+    remind:
+      - "If you added a user-facing target, add it to the Development section of README.md."
+      - "If you added a new validation tier, document it in the CLAUDE.md validation tiers table."
+
+  # --- README ---
+  - when_changed: "README.md"
+    remind:
+      - "If formula status changed (validated / in progress), verify the table in README.md matches the Dockerfile install steps (every formula installed in Dockerfile should be ✓ validated)."
+
+  # --- Skills ---
+  - when_changed: ".claude/skills/**/skill.md"
+    remind:
+      - "If this is a new skill, add a row to the Skills table in CLAUDE.md."
+      - "If the skill references specific formula names or resource versions, verify those still match the actual Formula/*.rb files."
+
+  # --- Hook infrastructure ---
+  - when_changed: ".claude/hooks/living-artifacts.yaml"
+    remind:
+      - "Does the new trigger also apply to sibling repos (earlbear, earlbear-clis)? If yes, mirror it into their `living-artifacts.yaml`."
+
+  - when_changed: ".claude/hooks/check-living-artifacts.py"
+    remind:
+      - "This file is copied from `../earlbear/.claude/hooks/check-living-artifacts.py`. If you changed it here, mirror the change upstream to keep the canonical copy in sync."
+
+  # --- CLAUDE.md ---
+  - when_changed: "CLAUDE.md"
+    remind:
+      - "If you edited the Skills section, verify each skill name has a matching `.claude/skills/<name>/skill.md`."
+      - "If you edited the validation tiers table, verify `Makefile` targets match the documented commands."

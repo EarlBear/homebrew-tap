@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-living-artifacts.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

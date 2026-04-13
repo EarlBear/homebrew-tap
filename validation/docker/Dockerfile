@@ -20,14 +20,18 @@ RUN cd /home/linuxbrew/tap && \
     git commit -m "tap snapshot"
 
 # Build local archive for use as formula url, compute sha256, patch formulas
+# Replaces both the GitHub URL and the sha256 (whether placeholder zeros or real hash)
 RUN cd /home/linuxbrew && \
     tar -czf tap-v1.0.0.tar.gz -C /home/linuxbrew tap && \
     LOCAL_SHA=$(sha256sum /home/linuxbrew/tap-v1.0.0.tar.gz | awk '{print $1}') && \
     for f in /home/linuxbrew/tap/Formula/*.rb; do \
       sed -i \
         -e "s|url \"https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
-        -e "s|sha256 \"0000000000000000000000000000000000000000000000000000000000000000\"|sha256 \"$LOCAL_SHA\"|g" \
         "$f"; \
+      awk -v sha="$LOCAL_SHA" \
+        '/url "file:\/\/\/home\/linuxbrew\/tap-v1\.0\.0\.tar\.gz"/{found=1} \
+         found && /^  sha256 "[0-9a-f]{64}"/{sub(/"[0-9a-f]{64}"/, "\"" sha "\""); found=0} \
+         {print}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"; \
     done && \
     cd /home/linuxbrew/tap && \
     git add Formula/ && \
@@ -43,12 +47,32 @@ RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/ea
 # Install earlbear-plugins (shell script formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/earlbear-plugins || true
 
-# Install Docker-wrapped formula wrapper (post_install Docker build will be skipped — no daemon)
+# Install Docker-wrapped formula wrappers (post_install Docker build will be skipped — no daemon)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/ebjira 2>&1; \
     test -f "$(brew --prefix)/bin/ebjira" && echo "✓ ebjira wrapper installed" || \
     echo "INFO ebjira post_install skipped (no Docker daemon in container — expected)"
 
-# Smoke test ebdeck
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/ebdocs 2>&1; \
+    test -f "$(brew --prefix)/bin/ebdocs" && echo "✓ ebdocs wrapper installed" || \
+    echo "INFO ebdocs post_install skipped (no Docker daemon in container — expected)"
+
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/ebshop 2>&1; \
+    test -f "$(brew --prefix)/bin/ebshop" && echo "✓ ebshop wrapper installed" || \
+    echo "INFO ebshop post_install skipped (no Docker daemon in container — expected)"
+
+# Install agent-cli (shell script, depends on ebjira)
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/agent-cli 2>&1 && \
+    echo "✓ agent-cli installed"
+
+# Install earlbear meta-formula (all deps already installed above)
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source bytesofpurpose/earlbear/earlbear 2>&1 && \
+    echo "✓ earlbear meta-formula installed"
+
+# Smoke tests
 RUN ebdeck --help && echo "✓ ebdeck smoke test passed"
+RUN test -x "$(brew --prefix)/bin/ebdocs" && echo "✓ ebdocs binary present"
+RUN test -x "$(brew --prefix)/bin/ebshop" && echo "✓ ebshop binary present"
+RUN test -x "$(brew --prefix)/bin/agent-cli" && echo "✓ agent-cli binary present"
+RUN test -x "$(brew --prefix)/bin/earlbear-setup" && echo "✓ earlbear-setup binary present"
 
 RUN echo "✓ Docker validation complete"
