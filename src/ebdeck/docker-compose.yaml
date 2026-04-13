@@ -1,0 +1,103 @@
+# Deck Generator — Docker Compose
+# Each POC runs in its own container with shared volume mounts.
+#
+# Usage (via Makefile — always prefer make targets):
+#   make pptx                                    # Default brand
+#   make pptx BRAND=brands/matcha.yaml           # Custom brand
+#   make permutations                            # All brand × tool combos
+#
+# Direct compose (prefer Makefile instead):
+#   docker compose run --rm pptx /data/content/investor-pitch.yaml /data/brands/espresso.yaml
+
+services:
+  # --- Marp ---
+  marp:
+    build: ./poc-marp
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-marp/output:/app/output
+
+  marp-pdf:
+    build: ./poc-marp
+    entrypoint: ["sh", "-c"]
+    command: ["node generate.js /data/content/investor-pitch.yaml /data/brand.yaml && npx @marp-team/marp-cli --allow-local-files output/deck.md --pdf -o output/deck.pdf"]
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-marp/output:/app/output
+
+  marp-pptx:
+    build: ./poc-marp
+    entrypoint: ["sh", "-c"]
+    command: ["node generate.js /data/content/investor-pitch.yaml /data/brand.yaml && npx @marp-team/marp-cli --allow-local-files output/deck.md --pptx -o output/deck.pptx"]
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-marp/output:/app/output
+
+  # --- Slidev ---
+  slidev:
+    build: ./poc-slidev
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-slidev/output:/app/output
+
+  slidev-pptx:
+    build: ./poc-slidev
+    entrypoint: ["sh", "-c"]
+    command: ["node generate.js /data/content/investor-pitch.yaml /data/brand.yaml && slidev export output/slides.md --output output/deck.pptx --format pptx --timeout 60000"]
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-slidev/output:/app/output
+
+  # --- python-pptx ---
+  pptx:
+    build: ./poc-pptx
+    volumes:
+      - ./brand.yaml:/data/brand.yaml:ro
+      - ./brands:/data/brands:ro
+      - ./content:/data/content:ro
+      - ./assets:/data/assets:ro
+      - ./poc-pptx/output:/app/output
+
+  # --- Thumbnails & Gallery ---
+  thumbnails:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.thumbnails
+    command: ["generate-thumbnails.py"]
+    volumes:
+      - ./dist:/data/dist
+      - ./brands:/data/brands:ro
+
+  gallery:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.thumbnails
+    command: ["build-gallery.py"]
+    volumes:
+      - ./dist:/data/dist
+      - ./brands:/data/brands:ro
+
+  # --- Figma Plugin (build only — outputs dist/main.js + dist/ui.html) ---
+  # Content and brand files are embedded into the plugin at build time
+  figma-build:
+    build: ./poc-figma
+    volumes:
+      - ./poc-figma/output:/app/output
+      - ./content:/app/content:ro
+      - ./brands:/app/brands:ro
+      - ./brand.yaml:/app/brand.yaml:ro

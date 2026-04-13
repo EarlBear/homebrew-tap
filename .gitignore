@@ -1,0 +1,8 @@
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/
+# Never commit credentials
+.env
+*.env

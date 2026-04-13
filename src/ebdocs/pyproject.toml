@@ -1,0 +1,45 @@
+[project]
+name = "ebdocs"
+version = "0.1.0"
+description = "Google Docs CLI for EarlBear agents and humans"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9",
+    "rich>=13.0",
+    "httpx>=0.27",
+    "pydantic>=2.0",
+    "google-api-python-client>=2.130",
+    "google-auth>=2.29",
+    "google-auth-httplib2>=0.2",
+    "google-auth-oauthlib>=1.2",
+    "markdown-it-py>=3.0",
+    "PySocks>=1.7",
+    "pyyaml>=6.0",
+    "pygments>=2.17",
+]
+
+[project.scripts]
+ebdocs = "ebdocs.main:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ebdocs = ["use-cases.yaml"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,7 @@
+{
+  "name": "shopify-manager",
+  "description": "Shopify storefront management — products, customers, inventory, themes, and declarative store conformance",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

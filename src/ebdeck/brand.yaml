@@ -1,0 +1,84 @@
+# Brand Configuration — Earlbear
+# E-commerce healing & optimization platform for Shopify stores
+#
+# Aesthetic: Luxurious, warm, refined — like a chic specialty coffee shop.
+# Think: rich espresso tones, warm cream marble, brushed gold accents,
+# soft lighting, premium sans-serif typography. Approachable yet elevated.
+
+company:
+  name: "Earlbear"
+  tagline: "Heal Your Storefront. Grow Your Revenue."
+  website: "https://earlbear.com"
+  description: >
+    AI-powered platform that diagnoses and heals e-commerce websites —
+    fixing broken experiences, optimizing conversions, and driving revenue
+    growth for Shopify merchants.
+
+colors:
+  # Espresso & cream palette — luxurious, warm, trustworthy
+  primary: "#1C1210"          # Deep espresso — headers, dark backgrounds
+  secondary: "#6B4C3B"        # Warm mocha — secondary text, accents
+  accent: "#C8A97E"           # Brushed gold — CTAs, key metrics, highlights
+  background: "#FAF6F1"       # Warm parchment cream — slide backgrounds
+  surface: "#F0EAE2"          # Latte foam — card backgrounds, surfaces
+  text: "#1C1210"             # Espresso — primary body text
+  text_light: "#FAF6F1"       # Cream — text on dark backgrounds
+  muted: "#8C7A6B"            # Warm taupe — captions, footnotes
+  border: "#D4C5B5"           # Soft linen — subtle borders, dividers
+
+fonts:
+  heading: "Playfair Display"   # Elegant serif — luxury, editorial feel
+  body: "Source Sans Pro"       # Clean, readable — warm humanist sans
+  mono: "JetBrains Mono"       # Modern monospace for any code/data
+
+logo:
+  path: "assets/logo.png"
+  path_white: "assets/logo-white.png"
+  width: 180
+
+slide_defaults:
+  aspect_ratio: "16:9"
+  footer: "Confidential — For Investor Use Only"
+
+# Design tokens — spacing, shadows, borders for consistent visual language
+design:
+  spacing:
+    xs: 4
+    sm: 8
+    md: 12
+    lg: 20
+    xl: 32
+    xxl: 52
+  shadows:
+    sm: "0 1px 2px rgba(0,0,0,0.05)"
+    md: "0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05)"
+    lg: "0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)"
+  borders:
+    radius_sm: 4
+    radius_md: 8
+    radius_lg: 12
+
+# Style variants — each tool uses a different one to showcase range.
+# All variants share the core espresso-cream DNA but diverge in mood.
+styles:
+  warm:
+    description: "Classic & luxurious — the core Earlbear identity"
+    hero_gradient: "linear-gradient(135deg, #1C1210 0%, #3A2A22 50%, #6B4C3B 100%)"
+
+  modern:
+    description: "Dark & refined — sophisticated evening mood"
+    hero_gradient: "linear-gradient(135deg, #0D0B0A 0%, #1C1210 50%, #2A1F1A 100%)"
+    primary_override: "#0D0B0A"
+    accent_override: "#D4A574"
+
+  nature:
+    description: "Earthy & grounded — artisanal craft feel"
+    hero_gradient: "linear-gradient(135deg, #2A2018 0%, #3D2E1E 50%, #5C4033 100%)"
+    primary_override: "#2A2018"
+    accent_override: "#B8860B"
+
+  figma:
+    description: "Polished & interactive — native Figma presentation feel"
+    hero_gradient: "linear-gradient(135deg, #1C1210 0%, #2A1F1A 60%, #4A3728 100%)"
+    primary_override: "#1C1210"
+    accent_override: "#C8A97E"

@@ -1,0 +1,85 @@
+{
+  "name": "earlbear-claude-plugins",
+  "owner": {
+    "name": "Omar Eid"
+  },
+  "metadata": {
+    "description": "EarlBear plugin marketplace — Claude skills for Shopify storefront optimization, investor decks, wireframes, Jira, Google Docs, and cloud agent workflows",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "discover-earlbear-plugins",
+      "source": "./plugins/discover-earlbear-plugins",
+      "description": "Discover available EarlBear plugins and see what's installed",
+      "version": "1.0.0",
+      "category": "getting-started",
+      "keywords": ["discover", "explore", "plugins", "marketplace", "earlbear"]
+    },
+    {
+      "name": "deck-manager",
+      "source": "./plugins/deck-manager",
+      "description": "Generate, review, and publish investor pitch decks via ebdeck (Marp, Slidev, python-pptx, Figma)",
+      "version": "1.0.0",
+      "category": "content",
+      "keywords": ["decks", "slides", "pitch", "marp", "slidev", "pptx", "figma", "ebdeck"]
+    },
+    {
+      "name": "wireframe-manager",
+      "source": "./plugins/wireframe-manager",
+      "description": "Build, review, and QA the 12-theme EarlBear landing page wireframes",
+      "version": "1.0.0",
+      "category": "design",
+      "keywords": ["wireframes", "design", "themes", "frontend", "qa", "screenshots"]
+    },
+    {
+      "name": "artifact-manager",
+      "source": "./plugins/artifact-manager",
+      "description": "Import Claude artifacts, manage previews, and publish the encrypted site catalog",
+      "version": "1.0.0",
+      "category": "publishing",
+      "keywords": ["artifacts", "publish", "staticrypt", "catalog", "previews", "gh-pages"]
+    },
+    {
+      "name": "jira-manager",
+      "source": "./plugins/jira-manager",
+      "description": "Create, groom, and conform Jira issues for EarlBear backlog and sprint management",
+      "version": "1.0.0",
+      "category": "project-management",
+      "keywords": ["jira", "backlog", "grooming", "epics", "tickets", "sprint"]
+    },
+    {
+      "name": "shopify-manager",
+      "source": "./plugins/shopify-manager",
+      "description": "Manage, seed, and conform EarlBear Shopify storefronts and themes",
+      "version": "1.0.0",
+      "category": "ecommerce",
+      "keywords": ["shopify", "storefront", "theme", "seed", "ecommerce"]
+    },
+    {
+      "name": "cloud-agent-manager",
+      "source": "./plugins/cloud-agent-manager",
+      "description": "Manage and extend the EarlBear cloud agent (scheduling, tasks, feedback loops)",
+      "version": "1.0.0",
+      "category": "automation",
+      "keywords": ["cloud-agent", "automation", "scheduling", "agent", "tasks"]
+    },
+    {
+      "name": "earlbear-docs-manager",
+      "source": "./plugins/earlbear-docs-manager",
+      "description": "Author decision docs, leverage CLIs (gdocs/jira/shopify), build knowledge base",
+      "version": "1.0.0",
+      "category": "knowledge",
+      "keywords": ["gdocs", "docs", "knowledge", "decisions", "cli", "leveraging"]
+    },
+    {
+      "name": "dev-tools-manager",
+      "source": "./plugins/dev-tools-manager",
+      "description": "Developer tooling for EarlBear repos — secret scanning, git hooks, and security hygiene",
+      "version": "1.0.0",
+      "category": "developer-tools",
+      "keywords": ["security", "secrets", "gitleaks", "git-hooks", "dev-tools"]
+    }
+  ]
+}

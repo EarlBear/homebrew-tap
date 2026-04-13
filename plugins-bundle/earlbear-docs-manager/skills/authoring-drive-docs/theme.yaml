@@ -1,0 +1,91 @@
+# EarlBear Drive doc theme
+#
+# This file is the single source of truth for how every doc pushed via
+# `ebdocs sync push` looks when rendered in Google Docs. The sync engine
+# reads it at push time and applies the settings here as a post-push
+# theming pass.
+#
+# Loader: gdocs-cli/src/ebdocs/sync_engine.py `_load_theme()` →
+# `_apply_doc_theme()`. If this file is missing or fails to parse, the
+# sync engine falls back to the hard-coded defaults in sync_engine.py.
+#
+# Per-doc overrides: a doc can override any key in its frontmatter
+# `theme:` block, e.g.
+#
+#     ---
+#     tags: [vision]
+#     theme:
+#       body:
+#         font: "IBM Plex Sans"
+#       headings:
+#         color: {red: 0.2, green: 0.2, blue: 0.2}
+#     ---
+#
+# Font choice notes: the Docs API only resolves font names that appear
+# in the Docs Font menu FOR THE ACCOUNT making the API call. Google
+# Docs ships with ~30 fonts by default (Arial, Roboto, Montserrat,
+# Lora, Merriweather, Georgia, PT Sans, PT Serif, Spectral, EB
+# Garamond, Courier New, etc.). Anything else (Inter, Source Serif
+# Pro, IBM Plex, etc.) must be added via the "More fonts" picker in
+# the Docs UI by each account that will push documents. This is a
+# per-account preference, not a global Docs capability.
+#
+# IMPORTANT: if the API receives an unrecognized font name, it does
+# NOT silently keep the previous font — it falls back to **Arial**.
+# So a typo or a "More fonts" font that hasn't been registered will
+# produce an Arial document, not preserve whatever was already there.
+#
+# Default pairing below uses Roboto + Montserrat because both ship in
+# every Google Docs account by default, eliminating the "did the sync
+# account add these via More fonts?" failure mode. See
+# `.claude/skills/authoring-drive-docs/SKILL.md` for tone guidance.
+
+# Body text (all NORMAL_TEXT paragraphs)
+body:
+  font: "Roboto"         # Ships in default Docs font menu
+  font_size_pt: 11
+  space_below_pt: 8      # Vertical gap between consecutive paragraphs
+  line_spacing: 1.15     # Percentage-based (1.0 = single, 1.15 = standard)
+
+# Headings (HEADING_1 through HEADING_6)
+headings:
+  font: "Montserrat"     # Ships in default Docs font menu
+  weight: 700            # 400=regular, 700=bold
+  color:                 # Muted dark blue-gray accent
+    red: 0.15
+    green: 0.25
+    blue: 0.4
+  space_above_pt: 14     # Gap above each heading (separates sections)
+  space_below_pt: 6      # Gap below heading before first body paragraph
+  # Per-level font sizes. H1 is the doc title, H2 is a top-level
+  # section, H3 is a subsection. H4+ rarely used but supported.
+  sizes_pt:
+    1: 22
+    2: 18
+    3: 14
+    4: 12
+    5: 11
+    6: 11
+
+# Tables (post-_insert_table styling pass)
+tables:
+  cell_font_size_pt: 9
+  cell_padding:
+    top_pt: 3
+    bottom_pt: 3
+    left_pt: 4
+    right_pt: 4
+  # Column width algorithm: content-aware (see sync_engine.py
+  # `_insert_table` Pass 3). These constants tune it.
+  column_width:
+    page_width_pt: 468   # Standard 8.5x11 minus 1in margins
+    min_col_pt: 45
+    max_col_pt: 220
+
+# Code blocks (single-cell tables created by `_insert_code_block`)
+code_blocks:
+  font: "Courier New"    # Must be monospace; "JetBrains Mono" also works if available
+  cell_background:       # Light gray-blue to distinguish from body
+    red: 0.95
+    green: 0.95
+    blue: 0.97

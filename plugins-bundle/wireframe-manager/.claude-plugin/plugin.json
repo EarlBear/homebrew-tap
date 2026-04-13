@@ -1,0 +1,7 @@
+{
+  "name": "wireframe-manager",
+  "description": "Build, review, QA-test, and extend EarlBear landing-page wireframes across 12 themes",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

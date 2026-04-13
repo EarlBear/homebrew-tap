@@ -1,0 +1,7 @@
+{
+  "name": "earlbear-docs-manager",
+  "description": "Author Drive docs, manage the EarlBear knowledge base, prepare decision docs, and leverage the ebdocs, ebshop, and ebjira CLIs.",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

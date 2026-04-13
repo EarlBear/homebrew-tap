@@ -1,0 +1,133 @@
+# ebdocs use-case corpus
+#
+# NOTE: This file was written to tests/ because the harness sandbox did not
+# allow writing to src/ebdocs/. MOVE IT to src/ebdocs/use-cases.yaml:
+#   git mv gdocs-cli/tests/use-cases.yaml gdocs-cli/src/ebdocs/use-cases.yaml
+#
+# Schema:
+#   id             kebab-case unique id
+#   title          one-line title
+#   when           single-sentence trigger — "when would you reach for this?"
+#   commands       ordered list of shell commands (copy-paste runnable)
+#   notes          optional markdown explanation (multi-line with `|`)
+#   tags           list of short tags (agent, deliverable, share, deep-link, ...)
+#   last_verified  ISO date the entry was last confirmed to work (YYYY-MM-DD)
+#
+# Keep entries REAL — each one should solve a problem we have actually hit.
+# `ebdocs discover` surfaces these; `--help` handles syntax.
+
+use_cases:
+  - id: ship-agent-deliverable
+    title: Ship an agent-drafted deliverable as a shared Google Doc linked to a Jira issue
+    when: Watson (or any agent) produces a kind=report, kind=playbook, or kind=sop artifact and needs it in the shared Drive folder and linked back to the tracking issue
+    commands:
+      - DOC_ID=$(ebdocs doc create --title "EARL-42 draft v1" --from-markdown /tmp/playbook.md --json id | jq -r '.id')
+      - ebdocs link jira "$DOC_ID" --issue EARL-42
+    notes: |
+      The doc lands in `GOOGLE_DRIVE_FOLDER_ID` automatically so all founders
+      see it without a separate share step. `link jira` posts a pointer
+      comment on the Jira issue with the doc URL — this is how doc-like
+      kinds (report, playbook, blog-post, statement, store-analysis,
+      product-catalog) exit the draft-artifact skill.
+    tags: [agent, deliverable, watson, jira]
+    last_verified: 2026-04-11
+
+  - id: versioned-doc-discovery
+    title: Find the latest draft version of an issue's deliverable
+    when: Watson needs to determine whether to write draft-v2, draft-v3, etc. for a doc-like kind without scanning Drive by hand
+    commands:
+      - ebdocs doc list --limit 50 --json id,title
+    notes: |
+      Filter the output for titles matching `^EARL-42 draft v(\d+)$` and
+      take `max+1`. This is the Google Doc equivalent of the
+      `ebjira attachment list` version scan used for file-like kinds.
+      See `.claude/skills/draft-artifact/SKILL.md` § Step 5.
+    tags: [agent, versioning, discovery, draft]
+    last_verified: 2026-04-11
+
+  - id: review-with-deep-links
+    title: Leave anchored review feedback on a specific claim in a doc
+    when: Reviewing a Watson draft and you want a comment tied to the exact sentence, plus a direct URL you can paste into a Jira comment
+    commands:
+      - ebdocs comment add DOC_ID --text "This claim needs a source" --quoted-text "62% of stores"
+      - ebdocs doc links DOC_ID --format table
+      - ebdocs doc highlight DOC_ID --text "Migrate to Dawn" --prefix "Recommendation"
+    notes: |
+      `comment add` returns a `?disco=COMMENT_ID` URL that scrolls to the
+      comment. `doc links` lists headings + comments + bookmarks as one
+      unified table — great for building a Jira review comment with deep
+      links to specific parts of a doc. `doc highlight` emits a
+      `#:~:text=` fragment URL that Chrome scrolls + highlights.
+    tags: [review, deep-link, comment, collaboration]
+    last_verified: 2026-04-11
+
+  - id: embed-mermaid-architecture
+    title: Embed a Mermaid architecture diagram in a design doc
+    when: You need a rendered architecture diagram inside a Google Doc (design doc, playbook) at full-page width
+    commands:
+      - mmdc -i architecture.mmd -o architecture.png -w 1200
+      - ebdocs doc image-upload DOC_ID --file architecture.png --width 468
+    notes: |
+      `image-upload` uploads to Drive, makes the file public, inserts the
+      image into the doc, then deletes the Drive file (unless
+      `--keep-file`). 468 points is ~full width on a standard doc.
+      Alternative: `ebdocs doc image --url https://mermaid.ink/svg/...`
+      to skip the local render.
+    tags: [image, diagram, mermaid, design-doc]
+    last_verified: 2026-04-11
+
+  - id: export-doc-for-stakeholder
+    title: Export a doc as PDF for a stakeholder who can't open Google Docs
+    when: A reviewer wants a PDF snapshot of the current state of a doc (attach to email, upload to a portal, archive)
+    commands:
+      - ebdocs export download DOC_ID --format pdf --output /tmp/report.pdf
+      - ebdocs export url DOC_ID
+    notes: |
+      `export download` writes the binary file to disk. Supported formats:
+      `pdf`, `docx`, `html`, `txt`. `export url` prints the plain edit URL
+      so you can share it alongside the PDF for anyone who does have Docs
+      access.
+    tags: [export, pdf, stakeholder]
+    last_verified: 2026-04-11
+
+  - id: verify-oauth-credentials
+    title: Verify ebdocs credentials work before running a batch job
+    when: You just ran `make gdocs-cli-login` or rotated an OAuth client secret and want to fail fast before a long script starts
+    commands:
+      - ebdocs auth status
+      - ebdocs doc list --limit 1
+    notes: |
+      `auth status` confirms the refresh-token -> access-token round trip.
+      `doc list --limit 1` confirms Drive API access to the configured
+      folder. If the first one is OK but the second fails, the Drive API
+      isn't enabled on the GCP project, or `GOOGLE_DRIVE_FOLDER_ID` is
+      wrong / unshared.
+    tags: [auth, diagnostics, health-check]
+    last_verified: 2026-04-11
+
+  - id: append-to-existing-doc
+    title: Append a new section to an existing doc without overwriting it
+    when: A revision needs to add a "Changes from v1" section at the bottom of an existing plan or draft doc
+    commands:
+      - ebdocs doc write DOC_ID --content "## Changes from v1\n- Addressed reviewer feedback on section 3.\n- Added new risks section." --append
+    notes: |
+      `doc write --append` inserts markdown at the end of the doc. Without
+      `--append`, `doc write` replaces the entire body — use that only for
+      full regenerations. The CLI handles character-index drift internally
+      so you don't have to think about `batchUpdate` ordering.
+    tags: [write, append, edit]
+    last_verified: 2026-04-11
+
+  - id: seed-reference-doc
+    title: Generate the ebdocs reference document that exercises every feature
+    when: You changed the markdown renderer, table logic, or image insertion code and need a visual regression doc
+    commands:
+      - make gdocs-cli-reference
+    notes: |
+      Runs `scripts/gdocs-reference-doc.sh` which creates a single Google
+      Doc that exercises every CLI feature — headings, bold/italic, lists,
+      code blocks, tables, images, footnotes, page breaks, TOC, bookmarks,
+      comments, sharing. Open it in a browser to eyeball rendering after
+      code changes. Needs valid `.env` creds.
+    tags: [regression, smoke-test, reference]
+    last_verified: 2026-04-11

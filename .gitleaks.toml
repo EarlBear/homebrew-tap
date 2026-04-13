@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Supabase anon keys are intentionally public (RLS-protected)"
+regexes = ['''sb_publishable_[A-Za-z0-9_-]+''']

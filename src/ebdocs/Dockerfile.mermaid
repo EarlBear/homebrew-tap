@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+# Chromium + fonts for puppeteer/mmdc. We skip puppeteer's own Chromium
+# download and point it at the apk-installed chromium binary.
+RUN apk add --no-cache \
+      chromium \
+      nss \
+      freetype \
+      harfbuzz \
+      ca-certificates \
+      ttf-freefont
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+RUN npm install -g @mermaid-js/mermaid-cli
+
+# Puppeteer needs --no-sandbox when running as root inside a container.
+RUN printf '%s\n' '{' '  "args": ["--no-sandbox", "--disable-setuid-sandbox"]' '}' \
+    > /puppeteer-config.json
+
+ENTRYPOINT ["mmdc", "--puppeteerConfigFile", "/puppeteer-config.json"]

@@ -1,0 +1,7 @@
+{
+  "name": "dev-tools-manager",
+  "description": "Developer tooling for EarlBear repos — secret scanning, git hooks, and security hygiene",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "artifact-manager",
+  "description": "Import, preview, publish, and maintain Claude artifacts and the encrypted earlbear-sites catalog",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

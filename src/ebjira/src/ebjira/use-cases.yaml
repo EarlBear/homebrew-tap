@@ -1,0 +1,170 @@
+# ebjira use-case corpus
+#
+# Schema:
+#   id             kebab-case unique id
+#   title          one-line title
+#   when           single-sentence trigger — "when would you reach for this?"
+#   commands       ordered list of shell commands (copy-paste runnable)
+#   notes          optional markdown explanation (multi-line with `|`)
+#   tags           list of short tags (workflow, agent, planning, bulk, ...)
+#   last_verified  ISO date the entry was last confirmed to work (YYYY-MM-DD)
+#
+# Keep entries REAL — each one should solve a problem we have actually hit.
+# `ebjira discover` surfaces these; `--help` handles syntax.
+
+use_cases:
+  - id: pull-watson-work-queues
+    title: Pull Watson's four work queues for a daily run
+    when: Starting the cloud agent's daily loop — you need Review, Rework, Planning, and New Work lists in priority order
+    commands:
+      - ebjira issue list --jql 'project = EARL AND (labels = ai-eligible OR assignee = currentUser()) AND status = "Review" ORDER BY priority DESC, updated ASC' --json key,summary,status,priority,labels
+      - ebjira issue list --jql 'project = EARL AND labels = ai-drafted AND status = "In Progress" ORDER BY priority DESC, updated ASC' --json key,summary,status,priority,labels
+      - ebjira issue list --jql 'project = EARL AND (labels = ai-eligible OR assignee = currentUser()) AND status = "Planning" ORDER BY priority DESC, created ASC' --json key,summary,status,priority,labels
+      - ebjira issue list --jql 'project = EARL AND (labels = ai-eligible OR assignee = currentUser()) AND status = "Prioritized" ORDER BY priority DESC, created ASC' --json key,summary,status,priority,labels
+    notes: |
+      These four JQLs are the contract between the Watson agent and the board. The
+      priority order (Review > Rework > Planning > New) is enforced by concatenating
+      the queues in this order. See `.claude/skills/pull-work/SKILL.md`.
+    tags: [agent, workflow, jql, watson]
+    last_verified: 2026-04-11
+
+  - id: plan-first-gate
+    title: Plan-first gate before drafting an artifact
+    when: Watson just pulled an issue from Prioritized and must verify an approved plan attachment exists before executing
+    commands:
+      - ebjira attachment list EARL-42 --format json
+      - ebjira issue transition EARL-42 "Planning"
+      - ebjira issue comment EARL-42 "**Planning:** required — no plan attachment found on execution entry. Returning to Planning."
+    notes: |
+      Filter the `attachment list` output for filenames matching
+      `^EARL-42-plan-v\d+\.md$`. If none match, run the transition + comment
+      commands to bounce the issue back to Planning — Watson never self-heals
+      by drafting a plan inline. See `.claude/skills/draft-artifact/SKILL.md`
+      and `.claude/skills/pull-work/SKILL.md`.
+    tags: [agent, planning, watson, guardrail]
+    last_verified: 2026-04-11
+
+  - id: finish-dev-branch
+    title: Finish a dev branch and hand off to review
+    when: You're done coding on an EARL-NNN branch and want it pushed, linked on the issue, and transitioned to Ready For Review in one shot
+    commands:
+      - ebjira dev status
+      - ebjira dev finish
+    notes: |
+      `dev finish` reads the issue key from the branch name, pushes the branch,
+      adds a GitHub remote link to the Jira issue, posts a "Development Complete"
+      comment, and transitions the issue to Ready For Review. Use
+      `--no-push` or `--no-transition` to opt out of individual steps.
+    tags: [dev, workflow, git, transition]
+    last_verified: 2026-04-11
+
+  - id: start-work-from-backlog
+    title: Pick up a Prioritized issue and start working
+    when: You're about to code — you need a prioritized list, a branch, and the issue moved to In Progress without remembering three commands
+    commands:
+      - ebjira dev list
+      - ebjira dev start EARL-154
+      - ebjira dev commit "Add Marp template support for deck generation"
+    notes: |
+      `dev list` shows Prioritized issues ordered by priority and assignee.
+      `dev start` creates `feature/EARL-154-<slug>` and transitions the issue
+      to In Progress. `dev commit` auto-prefixes the message with the issue key
+      from the branch name.
+    tags: [dev, workflow, git, branch]
+    last_verified: 2026-04-11
+
+  - id: apply-seed-yaml
+    title: Apply the issues.yaml seed file to Jira
+    when: You edited manifests/jira/issues.yaml to add, re-parent, reclassify, or retitle issues and want Jira to match
+    commands:
+      - ebjira seed validate
+      - ebjira seed apply --project EARL --dry-run
+      - ebjira seed apply --project EARL
+      - ebjira seed export --project EARL
+    notes: |
+      The seed YAML is the single editable view of all project issues. `apply`
+      reads the emoji tags (🎫 key, 🏷️ type, 📦 component, 👤 assignee, ⬆️ priority,
+      📊 status, 🛑 blocks, 🔗 relates) and mutates Jira to match. `[[🎫:NEW]]`
+      gets replaced with the real key in the file after apply. Re-export at
+      the end to capture Jira-side edits back into the YAML.
+    tags: [seed, manifest, declarative, bulk]
+    last_verified: 2026-04-11
+
+  - id: conform-jira-project
+    title: Enforce manifests/jira/manifest.yaml against the live Jira project
+    when: You edited the Jira manifest (statuses, types, components, workflow scheme) and want to see and apply the drift
+    commands:
+      - ebjira manifest diff --project EARL
+      - ebjira manifest apply --project EARL
+      - ebjira manifest export --project EARL
+    notes: |
+      `manifest diff` prints the discover → diff → plan steps. `apply` is the
+      apply step; `export` resnapshots the live project back into the YAML so
+      the manifest is always the source of truth. Used by the `/conform-jira`
+      skill.
+    tags: [manifest, conformance, declarative, project-config]
+    last_verified: 2026-04-11
+
+  - id: daily-subtask-housekeeping
+    title: Find or create Watson's daily check-in subtask under the checkin epic
+    when: The agent is starting a run and needs one subtask per calendar day under EARL-31, closing any stale subtasks from prior days
+    commands:
+      - ebjira issue list --jql 'project = EARL AND parent = EARL-31 AND summary ~ "2026-04-11" ORDER BY created DESC' --json key,summary,status
+      - ebjira issue list --jql 'project = EARL AND parent = EARL-31 AND summary ~ "Check-In" AND status NOT IN ("Done") ORDER BY created DESC' --json key,summary,status
+      - ebjira issue create --project EARL --type Sub-task --summary "Watson Check-In 2026-04-11" --parent EARL-31 --description "Daily check-in subtask for Watson agent runs on 2026-04-11. Multiple runs append to this issue."
+      - ebjira issue transition EARL-150 "In Progress"
+      - ebjira issue comment EARL-150 "### Check-In (Run 20260411-140000)\n- **Agent:** Watson\n- **Status:** Starting work pull"
+    notes: |
+      Step 1 looks for today's subtask; step 2 finds stale ones from prior
+      days to close with `issue transition ... Done`. Create only if step 1
+      returns empty. See `.claude/skills/check-in/SKILL.md`.
+    tags: [agent, watson, check-in, workflow]
+    last_verified: 2026-04-11
+
+  - id: self-review-comments
+    title: Audit and clean Watson's recent comments on an issue
+    when: Watson's first step on any issue — delete verbose "AI-sounding" comments that violate the one-line pointer rule
+    commands:
+      - ebjira issue view EARL-42 --json comments
+      - ebjira issue comment-edit EARL-42 12345 "**In Progress:** draft v2 — EARL-42-draft-v2.md"
+      - ebjira issue comment-delete EARL-42 12346
+    notes: |
+      The self-review gate in every agent skill (draft-artifact, plan-issue,
+      review-work, handle-feedback) uses this triple. Scan the last 5
+      Watson-authored comments; if one has markdown headers, checklist dumps,
+      CLI output, or is > 500 chars, edit it in place to a clean pointer or
+      delete it entirely. See `.claude/skills/draft-artifact/SKILL.md` § Step 0.
+    tags: [agent, watson, comments, hygiene]
+    last_verified: 2026-04-11
+
+  - id: reconstruct-paper-trail
+    title: Reconstruct who returned an issue from Review and when
+    when: Handling feedback on a draft that was kicked back from Review to In Progress, and you need the reviewer's identity for the changes-from-v1 section
+    commands:
+      - ebjira issue history EARL-42
+      - ebjira issue view EARL-42 --json comments
+    notes: |
+      Find the most recent `status` changelog event with `to = "In Progress"`;
+      the `author` is the reviewer. The comment list, filtered to everything
+      after Watson's last `**In Progress:**` pointer, is the actual feedback.
+      This keeps rework artifacts attributable without posting reviewer-identity
+      chatter as standalone comments. See handle-feedback and review-work skills.
+    tags: [agent, history, paper-trail, rework]
+    last_verified: 2026-04-11
+
+  - id: attach-artifact-bare-filename
+    title: Attach an agent-produced artifact using the canonical content directory
+    when: Watson finished a draft/plan/review/blocker file and needs to put it on the Jira issue without absolute-path or base64 gymnastics
+    commands:
+      - mkdir -p "$CONTENT_DIR/jira/attachments/EARL-42"
+      - ebjira attachment add EARL-42 EARL-42-draft-v1.md
+      - ebjira issue update EARL-42 --labels ai-drafted
+      - ebjira issue transition EARL-42 "Review"
+    notes: |
+      The `bin/ebjira` wrapper resolves bare filenames against
+      `$CONTENT_DIR/jira/attachments/<KEY>/` automatically — write the file
+      there and attach by bare filename, no base64 encoding. The label add
+      is idempotent (Earl may add labels but never remove them). See
+      `.claude/skills/attach-results/SKILL.md`.
+    tags: [agent, attachment, workflow, transition]
+    last_verified: 2026-04-11

@@ -1,0 +1,7 @@
+{
+  "name": "cloud-agent-manager",
+  "description": "Cloud agent operations — manage, run, debug, and extend Watson (Earl), the EarlBear autonomous Claude Code agent",
+  "version": "1.0.0",
+  "author": { "name": "Omar Eid" },
+  "license": "MIT"
+}

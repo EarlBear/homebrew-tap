@@ -1,0 +1,9 @@
+services:
+  ebjira:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    # Default: show help. Override via: docker compose run --rm ebjira issue list
+    command: ["--help"]

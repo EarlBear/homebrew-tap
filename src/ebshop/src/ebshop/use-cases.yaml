@@ -1,0 +1,145 @@
+# ebshop use-case corpus
+#
+# NOTE: This file was written to tests/ because the harness sandbox did not
+# allow writing to src/ebshop/. MOVE IT to src/ebshop/use-cases.yaml:
+#   git mv shopify-cli/tests/use-cases.yaml shopify-cli/src/ebshop/use-cases.yaml
+#
+# Schema:
+#   id             kebab-case unique id
+#   title          one-line title
+#   when           single-sentence trigger — "when would you reach for this?"
+#   commands       ordered list of shell commands (copy-paste runnable)
+#   notes          optional markdown explanation (multi-line with `|`)
+#   tags           list of short tags (seed, conform, analytics, theme, ...)
+#   last_verified  ISO date the entry was last confirmed to work (YYYY-MM-DD)
+#
+# Keep entries REAL — each one should solve a problem we have actually hit.
+# `ebshop discover` surfaces these; `--help` handles syntax.
+
+use_cases:
+  - id: seed-dev-store
+    title: Seed the EarlBear dev store with test data
+    when: Spinning up a fresh Shopify dev store (or resetting one) and need 12 products, 5 collections, 8 customers, 4 discounts, 4 pages, 4 blog articles, 6 metafields, and 8 orders
+    commands:
+      - make shopify-cli-seed-dry
+      - make shopify-cli-seed
+      - ebshop analytics summary --days 30
+    notes: |
+      The seed is idempotent — safe to re-run; it won't duplicate rows that
+      already exist. The dry-run prints every item that would be created
+      without touching the API. After seeding, `analytics summary` gives
+      you a quick sanity check that orders actually landed. See
+      `/seed-shopify-store` skill.
+    tags: [seed, dev-store, bulk, idempotent]
+    last_verified: 2026-04-11
+
+  - id: conform-store-to-manifest
+    title: Enforce manifests/shopify/manifest.yaml against a live store
+    when: You edited the Shopify manifest (brand colors, pages, products, metafields) and want to see and apply the drift
+    commands:
+      - make shopify-cli-conform
+      - make shopify-cli-export
+      - ebshop checkout-branding update --from-manifest
+    notes: |
+      `shopify-cli-conform` runs the discover -> diff -> plan -> apply
+      pipeline from `scripts/shopify-conform.py`. `checkout-branding
+      update --from-manifest` is the one-shot way to push
+      `brand_identity.colors` from the manifest into the Shopify checkout
+      (requires Plus or a dev store). `shopify-cli-export` writes the live
+      store back out as YAML so the manifest stays the source of truth.
+      See `/conform-store` skill.
+    tags: [conform, manifest, declarative, brand]
+    last_verified: 2026-04-11
+
+  - id: pre-push-health-check
+    title: Verify Shopify credentials and store connectivity before a batch job
+    when: You rotated the Custom App access token or switched stores and want to fail fast before a long script runs
+    commands:
+      - ebshop auth status
+      - ebshop shop health
+      - ebshop shop info --format json
+    notes: |
+      `auth status` confirms the token; `shop health` confirms API
+      connectivity; `shop info` confirms you hit the right store. If
+      `auth status` returns 401, the Custom App was uninstalled or deleted
+      — re-run `make shopify-cli-login` in a separate terminal. See the
+      `bin/ebshop` wrapper smoke targets in the root Makefile.
+    tags: [auth, diagnostics, health-check]
+    last_verified: 2026-04-11
+
+  - id: attach-generated-images-to-products
+    title: Attach AI-generated product images to Shopify products after image generation
+    when: You just ran the ebimg manifest pipeline and have public URLs for product images that need to be linked to the right Shopify products
+    commands:
+      - ebshop product list --status active --json id,title,handle
+      - ebshop product attach-image 123 --url "https://drive.google.com/uc?id=..."
+    notes: |
+      `file upload` (via `fileCreate`) puts the image in Shopify Files but
+      does NOT attach it to a product — use `product attach-image --url`
+      which goes through `productCreateMedia`. The image URL must be
+      publicly fetchable by Shopify's servers. This is the bridge step in
+      the ebimg -> ebshop pipeline.
+    tags: [image, product, media, pipeline]
+    last_verified: 2026-04-11
+
+  - id: theme-asset-edit
+    title: Read and patch a single theme asset without downloading the whole theme
+    when: Customizing the live theme (e.g., updating `templates/index.json` section order or tweaking a Liquid snippet) without the Shopify CLI theme dev loop
+    commands:
+      - ebshop theme list
+      - ebshop theme get-asset 201 --key "templates/index.json"
+      - ebshop theme update-asset 201 --key "templates/index.json" --value '...updated json...'
+    notes: |
+      `theme get-asset` and `theme update-asset` use the REST Asset API
+      and operate on one file at a time — perfect for scripted theme
+      conformance. The theme list shows main/unpublished/demo themes so
+      you target the right one (usually use the unpublished/dev theme
+      until ready to `theme publish`). See `/customize-theme` skill.
+    tags: [theme, liquid, customize, asset]
+    last_verified: 2026-04-11
+
+  - id: analyze-a-store
+    title: Analyze a Shopify store for a sales/CX report
+    when: Opening a new merchant conversation and you need a one-pager on products, top sellers, top customers, and fulfillment footprint
+    commands:
+      - ebshop shop info
+      - ebshop analytics summary --days 30
+      - ebshop analytics top-products --days 30 --limit 10
+      - ebshop analytics top-customers --days 90 --limit 5
+      - ebshop inventory locations
+    notes: |
+      The `analytics` commands are computed from recent orders locally —
+      Shopify doesn't expose a generic analytics GraphQL endpoint. Use
+      `--days` to control the window. This is the corpus of data that
+      feeds a `kind:store-analysis` deliverable.
+    tags: [analytics, discovery, report, store-analysis]
+    last_verified: 2026-04-11
+
+  - id: audit-product-catalog
+    title: Audit a product catalog for draft/archived items before a launch
+    when: Pre-launch QA — you need to know which products are still in draft or archived so you can publish or clean up
+    commands:
+      - ebshop product list --status draft --json id,title,status,vendor
+      - ebshop product list --status archived --json id,title,status
+      - ebshop product list --status active --json id,title,total_variants
+    notes: |
+      Field selection keeps output small for scripting. `total_variants`
+      replaced `totalCount` in Shopify API 2026-01 — if you see null here,
+      you're on an old build, `make shopify-cli-rebuild`.
+    tags: [product, audit, catalog, launch]
+    last_verified: 2026-04-11
+
+  - id: create-discount-code
+    title: Create a discount code that actually applies in checkout
+    when: You need a percentage or fixed-amount code and want it created in one call without the 2026-01 "Context can't be blank" error
+    commands:
+      - ebshop discount create --title "SUMMER20" --type percentage --value 20 --code "SUMMER20"
+      - ebshop discount list --format table
+    notes: |
+      In Shopify API 2026-01, `discountCodeBasicCreate` requires three
+      previously-optional fields (`startsAt`, `customerSelection`,
+      `combinesWith`). The CLI sets them internally — if you get
+      "Context can't be blank", run `make shopify-cli-rebuild` to get the
+      latest mutation body.
+    tags: [discount, promo, checkout, 2026-01]
+    last_verified: 2026-04-11

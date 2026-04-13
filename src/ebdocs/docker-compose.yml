@@ -1,0 +1,12 @@
+services:
+  ebdocs:
+    build: .
+    image: ebdocs
+    env_file:
+      - ../.env
+    volumes:
+      # Mount service account key file (path from GOOGLE_SERVICE_ACCOUNT_KEY in .env)
+      - ${GOOGLE_SERVICE_ACCOUNT_KEY:-/dev/null}:/app/credentials.json:ro
+    environment:
+      # Override key path to the mounted location inside the container
+      - GOOGLE_SERVICE_ACCOUNT_KEY=/app/credentials.json
