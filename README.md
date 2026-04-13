@@ -5,9 +5,49 @@ EarlBear Homebrew tap — install all EarlBear CLI tools on a Mac in one command
 ## Quick start
 
 ```bash
-brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear
+# If you have this repo cloned locally (works whether repo is public or private):
+brew tap bytesofpurpose/earlbear /path/to/homebrew-earlbear
 brew install bytesofpurpose/earlbear/ebdeck
 ```
+
+## Private repo access
+
+The repo is currently private. Three ways to tap it:
+
+**Option A — Local clone (recommended for team members)**
+
+```bash
+# Clone the repo once
+git clone git@github.com:bytesofpurpose/homebrew-earlbear.git ~/homebrew-earlbear
+
+# Tap from the local path — works without any GitHub auth
+brew tap bytesofpurpose/earlbear ~/homebrew-earlbear
+brew install bytesofpurpose/earlbear/ebdeck
+```
+
+To update formulas later:
+```bash
+cd ~/homebrew-earlbear && git pull
+brew upgrade bytesofpurpose/earlbear/ebdeck
+```
+
+**Option B — SSH (requires SSH key with repo access)**
+
+```bash
+brew tap bytesofpurpose/earlbear git@github.com:bytesofpurpose/homebrew-earlbear.git
+brew install bytesofpurpose/earlbear/ebdeck
+```
+
+**Option C — HTTPS with PAT (requires GitHub token with `repo` scope)**
+
+```bash
+# Set token in env or embed in URL (never commit the token)
+HOMEBREW_GITHUB_API_TOKEN=ghp_... brew tap bytesofpurpose/earlbear \
+  https://github.com/bytesofpurpose/homebrew-earlbear
+brew install bytesofpurpose/earlbear/ebdeck
+```
+
+> If the repo is ever made public, `brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear` will work without any auth.
 
 ## Individual formulas
 
@@ -55,5 +95,5 @@ make validate-docker   # ~5min — brew install in Docker
 make validate-smoke    # ~10s  — smoke test local installs
 
 # Release
-make bump-and-release
+make bump-and-release VERSION=1.0.1
 ```
