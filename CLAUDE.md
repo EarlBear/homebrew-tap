@@ -66,6 +66,7 @@ Three skills cover the common tap operations. Invoke with `/skill-name`.
 | `/add-formula` | Scaffold a new formula (Docker-wrapped, Python venv, or script). Includes templates, PyPI resource lookup steps, and gotchas from ebdeck. |
 | `/release` | Full release flow: sync sources → validate → tag → push → patch sha256. |
 | `/sync` | Sync `src/` from sibling repos, report what changed, run audit tier. |
+| `/inspect-claude-internals` | Inspect a macOS Electron app (Claude Desktop or similar) to discover VM/container architecture, MCP tools, and plugin binary layout. Writes findings to `docs/<app>-internals.md`. |
 
 ## Secrets strategy
 

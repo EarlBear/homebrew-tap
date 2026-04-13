@@ -98,6 +98,12 @@ triggers:
       - "Run `make validate-cowork` to verify the test script still passes (Apple Silicon + macOS 26+ required)."
       - "Smoke test exit code 2 (CONFIG_MISSING) is a pass — same convention as validation/smoke/smoke-test.sh. Keep this consistent."
 
+  # --- Claude internals inspection ---
+  - when_changed: "docs/claude-app-internals.md"
+    remind:
+      - "If the Claude Desktop version changed, re-run the inspection steps to check if coworkd, vmBundle paths, or MCP tool names changed."
+      - "If plugin binary layout or shim protocol changed, update the 'Building Cowork-Compatible Skills' section and Task #72."
+
   # --- Hook infrastructure ---
   - when_changed: ".claude/hooks/living-artifacts.yaml"
     remind:
