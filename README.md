@@ -6,25 +6,29 @@ EarlBear Homebrew tap — install all EarlBear CLI tools on a Mac in one command
 
 ```bash
 brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear
-brew install earlbear      # installs everything
-earlbear-setup             # configure credentials
+brew install bytesofpurpose/earlbear/ebdeck
 ```
 
 ## Individual formulas
 
+| Formula | Status | Purpose |
+|---|---|---|
+| `ebdeck` | ✓ validated | Deck generator (Python + Docker) |
+| `ebjira` | ✓ validated | Jira CLI (Docker-wrapped) |
+| `earlbear-plugins` | ✓ validated | Claude plugin bundle |
+| `ebdocs` | in progress | Google Docs CLI |
+| `ebshop` | in progress | Shopify CLI |
+| `agent-cli` | in progress | Cloud agent admin |
+
 ```bash
-brew install bytesofpurpose/earlbear/ebjira    # Jira CLI
-brew install bytesofpurpose/earlbear/ebdocs    # Google Docs CLI
-brew install bytesofpurpose/earlbear/ebshop    # Shopify CLI
-brew install bytesofpurpose/earlbear/ebdeck    # Deck generator
-brew install bytesofpurpose/earlbear/agent-cli # Cloud agent admin
-brew install bytesofpurpose/earlbear/earlbear-plugins  # Claude plugins
+brew install bytesofpurpose/earlbear/ebdeck
+brew install bytesofpurpose/earlbear/ebjira
+brew install bytesofpurpose/earlbear/earlbear-plugins
 ```
 
 ## Credentials
 
-All CLIs read from `~/.config/earlbear/.env`. Run `earlbear-setup` to configure,
-or copy `.env.example` manually:
+All CLIs read from `~/.config/earlbear/.env`. Copy the example to get started:
 
 ```bash
 cp $(brew --prefix)/share/earlbear/.env.example ~/.config/earlbear/.env
