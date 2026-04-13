@@ -61,12 +61,12 @@ bump-and-release: ## Tag a new release (usage: make bump-and-release VERSION=1.0
 
 validate-audit: ## Tier 1 — brew audit + style in Docker (~30s)
 	@echo "$(BLUE)==> Tier 1: Formula audit$(NC)"
-	docker build -t earlbear-audit -f validation/audit/Dockerfile .
+	docker build --platform linux/amd64 -t earlbear-audit -f validation/audit/Dockerfile .
 	@echo "$(GREEN)✓ Audit passed$(NC)"
 
 validate-docker: ## Tier 2 — brew install in Docker (~5min, non-Docker formulas)
 	@echo "$(BLUE)==> Tier 2: Docker clean-install$(NC)"
-	docker build --no-cache -t earlbear-install-test -f validation/docker/Dockerfile .
+	docker build --no-cache --platform linux/amd64 -t earlbear-install-test -f validation/docker/Dockerfile .
 	@echo "$(GREEN)✓ Docker install test passed$(NC)"
 
 validate-smoke: ## Tier 4 — smoke test locally installed formulas (~10s)
