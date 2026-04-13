@@ -1,5 +1,5 @@
 .PHONY: help sync-sources bump-and-release \
-        validate validate-audit validate-docker validate-smoke validate-vm \
+        validate validate-audit validate-docker validate-smoke validate-vm validate-cowork \
         clean
 
 GREEN  := \033[0;32m
@@ -80,17 +80,34 @@ validate-vm: ## Tier 3 — full brew install in Tart macOS VM (~15min, Apple Sil
 	}
 	bash validation/tart/tart-test.sh
 
-validate: ## Run tiers 1 + 2 + 4 (add CI=1 to include VM)
+validate-cowork: ## Tier 5 — cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
+	@command -v container >/dev/null 2>&1 || { \
+		echo "$(YELLOW)apple/container not found.$(NC)"; \
+		echo "$(YELLOW)Install from: https://github.com/apple/container/releases$(NC)"; \
+		echo "$(YELLOW)Then run: container system start$(NC)"; \
+		exit 1; \
+	}
+	@[ "$$(uname -m)" = "arm64" ] || { \
+		echo "$(YELLOW)validate-cowork requires Apple Silicon (arm64). Skipping.$(NC)"; \
+		exit 1; \
+	}
+	bash validation/cowork/cowork-test.sh
+
+validate: ## Run tiers 1 + 2 + 4 (add CI=1 to include VM; add COWORK=1 to include cowork)
 	@$(MAKE) --no-print-directory validate-audit
 	@$(MAKE) --no-print-directory validate-docker
 	@$(MAKE) --no-print-directory validate-smoke
 	@if [ "$${CI:-0}" = "1" ]; then \
 		$(MAKE) --no-print-directory validate-vm; \
 	fi
+	@if [ "$${COWORK:-0}" = "1" ]; then \
+		$(MAKE) --no-print-directory validate-cowork; \
+	fi
 	@echo "$(GREEN)✓ All validation tiers passed$(NC)"
 
 # ── Misc ───────────────────────────────────────────────────────────────────────
 
-clean: ## Remove Docker build cache for earlbear images
+clean: ## Remove Docker/container build cache for earlbear images
 	docker rmi earlbear-audit earlbear-install-test 2>/dev/null || true
+	command -v container >/dev/null 2>&1 && container image rm earlbear-cowork-test:local 2>/dev/null || true
 	@echo "$(GREEN)✓ Cleaned$(NC)"

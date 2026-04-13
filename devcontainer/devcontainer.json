@@ -2,9 +2,7 @@
   "name": "EarlBear Cowork",
   "build": {
     "dockerfile": "Dockerfile",
-    "args": {
-      "TAP_REPO": "https://github.com/bytesofpurpose/homebrew-earlbear"
-    }
+    "context": ".."
   },
   "mounts": [
     "source=${localEnv:HOME}/.config/earlbear,target=/home/linuxbrew/.config/earlbear,type=bind,readonly=true"
@@ -15,5 +13,5 @@
   },
   "remoteUser": "linuxbrew",
   "workspaceFolder": "/workspace",
-  "postCreateCommand": "bash /home/linuxbrew/.linuxbrew/share/earlbear/install-plugins.sh 2>/dev/null || true"
+  "postCreateCommand": "bash $(brew --prefix earlbear-plugins)/libexec/install-plugins.sh 2>/dev/null || true"
 }

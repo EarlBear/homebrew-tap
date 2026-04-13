@@ -9,8 +9,8 @@ EarlBear Homebrew tap — Mac installer for all EarlBear CLI tooling.
 | Homebrew formulas | `Formula/` | macOS (dev laptop) | Install CLIs via `brew install` |
 | CLI source (synced) | `src/` | — | Copied from sibling repos by `make sync-sources` |
 | Wrapper scripts | `wrappers/` | macOS | Homebrew-specific Docker wrappers (not in source repos) |
-| Devcontainer | `devcontainer/` | Linux (Claude cowork) | Claude Code sandbox with EarlBear tooling |
-| Validation | `validation/` | Docker / Tart VM | Regression test suite |
+| Devcontainer | `devcontainer/` | Linux ARM64 (Claude cowork) | Claude Code sandbox with EarlBear tooling — tested by Tier 5 |
+| Validation | `validation/` | Docker / Tart VM / apple/container | Regression test suite (5 tiers) |
 
 ## Formulas
 
@@ -41,6 +41,7 @@ make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: smoke test local install (~10s)
 make validate-vm       # Tier 3: Tart macOS VM — full clean-room (~15min)
+make validate-cowork   # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
 
 # 4. Release
 make bump-and-release VERSION=1.0.1
@@ -51,9 +52,10 @@ make bump-and-release VERSION=1.0.1
 | Tier | Target | Time | What it catches |
 |---|---|---|---|
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
-| 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths |
-| 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS |
+| 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
+| 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS (Apple Silicon) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
+| 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
 
 ## Skills
 

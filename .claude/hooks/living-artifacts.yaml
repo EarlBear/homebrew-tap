@@ -79,6 +79,25 @@ triggers:
       - "If this is a new skill, add a row to the Skills table in CLAUDE.md."
       - "If the skill references specific formula names or resource versions, verify those still match the actual Formula/*.rb files."
 
+  # --- Devcontainer ---
+  - when_changed: "devcontainer/Dockerfile"
+    remind:
+      - "Run `make validate-cowork` to test the cowork devcontainer build end-to-end (requires Apple Silicon + macOS 26+ + apple/container)."
+      - "The sha256 awk-patch block must stay in sync with validation/docker/Dockerfile — both use the same pattern. If formula URL structure changes, update both."
+      - "Build context is repo root (`container build -f devcontainer/Dockerfile .`) — any COPY path must be relative to repo root."
+
+  - when_changed: "devcontainer/devcontainer.json"
+    remind:
+      - "Correct postCreateCommand path: `$(brew --prefix earlbear-plugins)/libexec/install-plugins.sh` — NOT `share/earlbear/install-plugins.sh` (that path does not exist)."
+      - "build.context must be `..` (repo root) so the Dockerfile COPY step can access Formula/, src/, plugins-bundle/."
+      - "If you added new remoteEnv vars, add a matching assertion to validation/cowork/cowork-test.sh."
+
+  # --- Cowork validation ---
+  - when_changed: "validation/cowork/**"
+    remind:
+      - "Run `make validate-cowork` to verify the test script still passes (Apple Silicon + macOS 26+ required)."
+      - "Smoke test exit code 2 (CONFIG_MISSING) is a pass — same convention as validation/smoke/smoke-test.sh. Keep this consistent."
+
   # --- Hook infrastructure ---
   - when_changed: ".claude/hooks/living-artifacts.yaml"
     remind:
