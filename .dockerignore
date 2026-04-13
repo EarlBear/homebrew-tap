@@ -14,5 +14,3 @@
 .gitleaks.toml
 .githooks
 
-# Exclude validation (not needed inside the container)
-validation
