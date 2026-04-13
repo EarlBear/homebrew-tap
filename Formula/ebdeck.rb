@@ -74,7 +74,7 @@ class Ebdeck < Formula
 
   def install
     libexec.install "src/ebdeck"
-    venv = virtualenv_create(libexec/"venv", "python@3.11")
+    venv = virtualenv_create(libexec/"venv", "python3.11")
     venv.pip_install resources
     venv.pip_install_and_link libexec/"ebdeck"
   end
