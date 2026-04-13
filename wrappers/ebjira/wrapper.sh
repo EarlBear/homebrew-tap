@@ -9,7 +9,6 @@ set -euo pipefail
 
 EARLBEAR_CONFIG_DIR="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}"
 ENV_FILE="$EARLBEAR_CONFIG_DIR/.env"
-LIBEXEC_DIR="${EARLBEAR_LIBEXEC:-$(brew --prefix)/Cellar/ebjira}"
 
 # Ensure .env exists
 if [ ! -f "$ENV_FILE" ]; then

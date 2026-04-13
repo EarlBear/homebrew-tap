@@ -1,0 +1,13 @@
+{
+  "name": "tap-manager",
+  "version": "1.0.0",
+  "description": "Homebrew tap maintenance for earlbear-homebrew — add formulas, bump versions, run validation tiers",
+  "skills": [
+    "introduce",
+    "add-formula",
+    "bump-version",
+    "validate-tap"
+  ],
+  "repo": "earlbear-homebrew",
+  "tap": "bytesofpurpose/earlbear"
+}

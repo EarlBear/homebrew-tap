@@ -9,6 +9,7 @@ class Ebshop < Formula
 
   def install
     (libexec/"ebshop").install Dir["src/ebshop/*"]
+    (libexec/"ebshop").install "wrappers/ebshop/wrapper.sh"
     bin.install_symlink libexec/"ebshop/wrapper.sh" => "ebshop"
   end
 

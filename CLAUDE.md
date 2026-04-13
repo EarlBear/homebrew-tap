@@ -7,6 +7,8 @@ EarlBear Homebrew tap — Mac installer for all EarlBear CLI tooling.
 | Recipe type | Directory | Platform | Purpose |
 |---|---|---|---|
 | Homebrew formulas | `Formula/` | macOS (dev laptop) | Install CLIs via `brew install` |
+| CLI source (synced) | `src/` | — | Copied from sibling repos by `make sync-sources` |
+| Wrapper scripts | `wrappers/` | macOS | Homebrew-specific Docker wrappers (not in source repos) |
 | Devcontainer | `devcontainer/` | Linux (Claude cowork) | Claude Code sandbox with EarlBear tooling |
 | Validation | `validation/` | Docker / Tart VM | Regression test suite |
 
@@ -70,3 +72,7 @@ Migrate to 1Password CLI (Option A) when team grows to ≥2 developers.
 - `plugins-bundle/` ← `../earlbear-claude-plugin-marketplace/plugins/`
 
 Do not hand-edit files in `src/` — edit source in the respective repos and re-sync.
+
+`wrappers/` contains Homebrew-specific wrapper scripts that are NOT in the source repos.
+Edit wrapper scripts directly in `wrappers/{cli}/wrapper.sh` — these are version-controlled here.
+The formula `install` block copies both `src/{cli}/*` (Dockerfile + source) and `wrappers/{cli}/wrapper.sh`.

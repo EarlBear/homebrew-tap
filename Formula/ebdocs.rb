@@ -9,6 +9,7 @@ class Ebdocs < Formula
 
   def install
     (libexec/"ebdocs").install Dir["src/ebdocs/*"]
+    (libexec/"ebdocs").install "wrappers/ebdocs/wrapper.sh"
     bin.install_symlink libexec/"ebdocs/wrapper.sh" => "ebdocs"
   end
 

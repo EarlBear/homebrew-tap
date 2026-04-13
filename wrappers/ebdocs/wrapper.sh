@@ -44,23 +44,6 @@ if [ -f "$THEME_SRC" ]; then
     THEME_MOUNT=(-v "$THEME_SRC:/etc/ebdocs/theme.yaml:ro" -e "EBDOCS_THEME_FILE=/etc/ebdocs/theme.yaml")
 fi
 
-# Mermaid pre-render for push/create commands
-case " $* " in
-    *" sync push "*|*" sync create "*)
-        PRERENDER_ROOT=""
-        if [ -n "$EBDOCS_SYNC_DIR_VAL" ]; then
-            PRERENDER_ROOT="$EBDOCS_SYNC_DIR_VAL"
-        elif [ -n "$CONTENT_DIR_VAL" ]; then
-            PRERENDER_ROOT="$CONTENT_DIR_VAL/gdocs"
-        fi
-        RENDER_SCRIPT="$(brew --prefix)/share/earlbear/render_mermaid.py"
-        if [ -n "$PRERENDER_ROOT" ] && [ -f "$RENDER_SCRIPT" ]; then
-            python3 "$RENDER_SCRIPT" "$PRERENDER_ROOT" --recursive --quiet 2>&1 \
-                | sed 's/^/[ebdocs pre-render] /' >&2 || true
-        fi
-        ;;
-esac
-
 exec docker run --rm \
     --env-file "$ENV_FILE" \
     "${SYNC_MOUNT[@]+"${SYNC_MOUNT[@]}"}" \

@@ -9,6 +9,7 @@ class Ebjira < Formula
 
   def install
     (libexec/"ebjira").install Dir["src/ebjira/*"]
+    (libexec/"ebjira").install "wrappers/ebjira/wrapper.sh"
     bin.install_symlink libexec/"ebjira/wrapper.sh" => "ebjira"
   end
 
