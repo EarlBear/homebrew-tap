@@ -40,7 +40,10 @@ make sync-sources
 make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: smoke test local install (~10s)
-make validate-vm       # Tier 3: Tart macOS VM — full clean-room (~15min)
+make validate-vm       # Tier 3: Tart macOS VM — clean-room from local source (~15min)
+                       #   prereqs (one-time): brew install cirruslabs/cli/tart
+                       #                       brew install hudochenkov/sshpass/sshpass
+                       #                       make tart-pull  (~6GB image download)
 make validate-cowork       # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
 make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, Apple Silicon)
 
@@ -68,7 +71,7 @@ make release-plugin-binaries        # upload binaries to an existing tag's relea
 |---|---|---|---|
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
-| 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS (Apple Silicon) |
+| 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
 | 5b | `make validate-plugin-binaries` | ~20min (SKIP_BUILD=1: ~2min) | Compile all 4 CLIs via PyInstaller → run each in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-binaries`. (Apple Silicon + Docker + apple/container) |

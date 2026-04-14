@@ -1,5 +1,5 @@
 .PHONY: help sync-sources bump-and-release release-plugin-binaries lfs-status \
-        validate validate-audit validate-docker validate-smoke validate-vm validate-cowork validate-plugin-binaries validate-cowork-sim \
+        validate validate-audit validate-docker validate-smoke validate-vm tart-pull validate-cowork validate-plugin-binaries validate-cowork-sim \
         build-plugin-binaries build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
         clean
 
@@ -177,9 +177,21 @@ validate-smoke: ## Tier 4 — smoke test locally installed formulas (~10s)
 	@echo "$(BLUE)==> Tier 4: Smoke tests$(NC)"
 	bash validation/smoke/smoke-test.sh
 
-validate-vm: ## Tier 3 — full brew install in Tart macOS VM (~15min, Apple Silicon)
+tart-pull: ## Pull the Tart macOS base image (~6GB, one-time setup for validate-vm)
 	@command -v tart >/dev/null 2>&1 || { \
 		echo "$(YELLOW)tart not found. Install with: brew install cirruslabs/cli/tart$(NC)"; \
+		exit 1; \
+	}
+	tart pull ghcr.io/cirruslabs/macos-sequoia-base:latest
+	@echo "$(GREEN)✓ Base image pulled. Run 'make validate-vm' to use it.$(NC)"
+
+validate-vm: ## Tier 3 — full clean-room brew install from local source in Tart macOS VM (~15min, Apple Silicon)
+	@command -v tart >/dev/null 2>&1 || { \
+		echo "$(YELLOW)tart not found. Install: brew install cirruslabs/cli/tart$(NC)"; \
+		exit 1; \
+	}
+	@command -v sshpass >/dev/null 2>&1 || { \
+		echo "$(YELLOW)sshpass not found. Install: brew install hudochenkov/sshpass/sshpass$(NC)"; \
 		exit 1; \
 	}
 	bash validation/tart/tart-test.sh
