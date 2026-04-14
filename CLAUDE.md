@@ -83,6 +83,7 @@ Five skills cover the common tap operations. Invoke with `/skill-name`.
 | `/sync` | Sync `src/` from sibling repos, report what changed, run audit tier. |
 | `/inspect-claude-internals` | Inspect a macOS Electron app (Claude Desktop or similar) to discover VM/container architecture, MCP tools, and plugin binary layout. Writes findings to `docs/<app>-internals.md`. |
 | `/make-cowork-plugin` | Convert an EarlBear Claude plugin to work inside the Claude Desktop cowork VM. Covers binary packaging (PyInstaller), the cowork shim pattern, confirm rules, credential injection, and `make build-plugin-*` targets. |
+| `/add-cli` | End-to-end guide for adding a new Python CLI: source sync, formula, cowork plugin, Makefile targets, all validation tiers, and release wiring in one pass. |
 
 ## Secrets strategy
 
