@@ -24,6 +24,20 @@ EarlBear Homebrew tap — Mac installer for all EarlBear CLI tooling.
 | `earlbear-plugins` | Shell script | Requires `claude` CLI on PATH |
 | `earlbear` | Meta (all deps) | One-liner setup entry point |
 
+## Casks
+
+| Cask | Source repo | Notes |
+|---|---|---|
+| `earlbear-installer` | `EarlBear/apps` (private) | One-click setup wizard; DMG released from that repo |
+
+To update the cask after a new installer release: see `/release` skill Path B, or run:
+```bash
+# Download new DMG, compute sha256, patch Casks/earlbear-installer.rb
+curl -sL https://github.com/EarlBear/apps/releases/download/installer-vX.Y.Z/EarlBear-Installer-X.Y.Z.dmg \
+  -o /tmp/installer.dmg && shasum -a 256 /tmp/installer.dmg
+# Then edit Casks/earlbear-installer.rb: version + sha256
+```
+
 ## Credentials convention
 
 All CLIs read from `~/.config/earlbear/.env`. Override with `EARLBEAR_CONFIG_DIR`.
