@@ -221,7 +221,7 @@ echo "Local tarball sha256: $LOCAL_SHA"
 
 for f in ~/tap-src/Formula/*.rb; do
     sed -i '' \
-        "s|url \"https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///Users/admin/tap-v1.0.0.tar.gz\"|g" \
+        "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///Users/admin/tap-v1.0.0.tar.gz\"|g" \
         "$f"
     awk -v sha="$LOCAL_SHA" \
         '/url "file:\/\/\/Users\/admin\/tap-v1\.0\.0\.tar\.gz"/{found=1}
@@ -234,14 +234,14 @@ git add Formula/
 git commit -q -m "patch local urls"
 
 # Tap from local git repo
-brew tap bytesofpurpose/earlbear ~/tap-src
+brew tap earlbear/tap ~/tap-src
 
 # Install earlbear meta-formula.
 # Docker-wrapped formulas (ebjira, ebdocs, ebshop) will log a post_install warning
 # ("failed to connect to Docker daemon") — this is expected; no Docker daemon in VM.
 # brew exits non-zero when post_install fails, so we assert the binaries are present
 # rather than relying on exit code.
-brew install --build-from-source bytesofpurpose/earlbear/earlbear || true
+brew install earlbear/tap/earlbear || true
 
 # Assert key binaries landed regardless of Docker post_install exit code
 for bin in ebdeck ebjira ebdocs ebshop agent-cli earlbear-setup; do

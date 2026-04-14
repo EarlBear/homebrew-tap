@@ -14,12 +14,12 @@ Run the earlbear-homebrew validation suite and report failures.
 2. **Tier 1 — brew style + audit (local, ~10s)**
    ```bash
    brew style Formula/*.rb
-   brew audit --skip-style bytesofpurpose/earlbear/ebjira \
-     bytesofpurpose/earlbear/ebdocs bytesofpurpose/earlbear/ebshop \
-     bytesofpurpose/earlbear/ebdeck bytesofpurpose/earlbear/agent-cli \
-     bytesofpurpose/earlbear/earlbear-plugins bytesofpurpose/earlbear/earlbear
+   brew audit --skip-style earlbear/tap/ebjira \
+     earlbear/tap/ebdocs earlbear/tap/ebshop \
+     earlbear/tap/ebdeck earlbear/tap/agent-cli \
+     earlbear/tap/earlbear-plugins earlbear/tap/earlbear
    ```
-   If the tap isn't tapped locally: `brew tap bytesofpurpose/earlbear "file://$(pwd)"`
+   If the tap isn't tapped locally: `brew tap earlbear/tap "file://$(pwd)"`
 
 3. **Tier 2 — Docker install (~5min)**
    ```bash

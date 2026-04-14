@@ -1,6 +1,6 @@
 # /release
 
-Cut a new release of the `bytesofpurpose/earlbear` Homebrew tap.
+Cut a new release of the `earlbear/tap` Homebrew tap.
 
 ## Usage
 
@@ -52,7 +52,7 @@ make bump-and-release VERSION=<VERSION>
 After the GitHub release tarball is live (~30s after tag push):
 
 ```bash
-curl -sL https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/vVERSION.tar.gz \
+curl -sL https://github.com/EarlBear/homebrew-tap/archive/refs/tags/vVERSION.tar.gz \
   -o /tmp/vVERSION.tar.gz
 shasum -a 256 /tmp/vVERSION.tar.gz
 ```
@@ -71,7 +71,7 @@ git push
 
 ```bash
 brew update
-brew upgrade bytesofpurpose/earlbear/ebdeck  # spot check one formula
+brew upgrade earlbear/tap/ebdeck  # spot check one formula
 ```
 
 ## Notes

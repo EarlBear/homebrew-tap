@@ -8,7 +8,7 @@ formula, cowork plugin, test harness, and release wiring — all in one pass.
 Use this skill when you have a new Python CLI in `earlbear-clis/` (or are about
 to write one) and you want it to be:
 
-- Installable on macOS via `brew install bytesofpurpose/earlbear/<cli>`
+- Installable on macOS via `brew install earlbear/tap/<cli>`
 - Callable inside Claude Desktop cowork sessions via a pre-compiled plugin binary
 - Covered by all validation tiers (audit → Docker → smoke → plugin binary → cowork)
 
@@ -83,7 +83,7 @@ make validate-docker   # Tier 2: brew install in Docker (~5min)
 
 Add the formula to `validation/docker/Dockerfile`:
 ```dockerfile
-RUN brew install bytesofpurpose/earlbear/<cli>
+RUN brew install earlbear/tap/<cli>
 RUN test -x $(brew --prefix)/bin/<cli>   # smoke test
 ```
 
@@ -100,7 +100,7 @@ assert_binary "<cli>"
 dependency:
 
 ```ruby
-depends_on "bytesofpurpose/earlbear/<cli>"
+depends_on "earlbear/tap/<cli>"
 ```
 
 ---

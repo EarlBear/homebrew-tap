@@ -76,8 +76,8 @@ Takes ~12 minutes with the Homebrew snapshot, ~15 minutes from scratch.
 6. **In VM via SSH heredoc:**
    - `git init ~/tap-src` — brew tap requires git history
    - Build local tarball + patch formula URLs/sha256 (same awk pattern as `validation/docker/Dockerfile`)
-   - `brew tap bytesofpurpose/earlbear ~/tap-src`
-   - `brew install --build-from-source bytesofpurpose/earlbear/earlbear`
+   - `brew tap earlbear/tap ~/tap-src`
+   - `brew install earlbear/tap/earlbear`
 7. **Smoke tests** — pipe `validation/smoke/smoke-test.sh` over SSH
 8. **Cleanup** — `tart stop` + `tart delete` (in EXIT trap)
 

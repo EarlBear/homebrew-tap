@@ -41,7 +41,7 @@ RUN cd /home/linuxbrew && \
     LOCAL_SHA=$(sha256sum /home/linuxbrew/tap-v1.0.0.tar.gz | awk '{print $1}') && \
     for f in /home/linuxbrew/tap/Formula/*.rb; do \
       sed -i \
-        -e "s|url \"https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
+        -e "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
         "$f"; \
       awk -v sha="$LOCAL_SHA" \
         '/url "file:\/\/\/home\/linuxbrew\/tap-v1\.0\.0\.tar\.gz"/{found=1} \
@@ -53,13 +53,13 @@ RUN cd /home/linuxbrew && \
     git commit -m "patch local urls"
 
 # Tap from local git repo (no network auth required)
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap bytesofpurpose/earlbear /home/linuxbrew/tap
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap
 
 # Install non-Docker formulas only (no Docker daemon in cowork container)
 # - ebdeck: Python venv orchestrator (the primary cowork tool)
 # - earlbear-plugins: Claude plugin bundle
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source \
-    bytesofpurpose/earlbear/ebdeck \
-    bytesofpurpose/earlbear/earlbear-plugins
+    earlbear/tap/ebdeck \
+    earlbear/tap/earlbear-plugins
 
 WORKDIR /workspace

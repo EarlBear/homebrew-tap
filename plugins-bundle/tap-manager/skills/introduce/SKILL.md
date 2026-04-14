@@ -10,7 +10,7 @@ I help maintain the `earlbear-homebrew` Homebrew tap at `~/Workspace/git/earlbea
 
 ## Context
 
-The tap (`bytesofpurpose/earlbear`) installs all EarlBear CLI tooling on macOS:
+The tap (`earlbear/tap`) installs all EarlBear CLI tooling on macOS:
 
 | Formula | Type | Notes |
 |---|---|---|

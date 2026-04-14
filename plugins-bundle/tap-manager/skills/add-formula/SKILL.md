@@ -34,8 +34,8 @@ Scaffold a new Homebrew formula in `earlbear-homebrew/Formula/`.
    ```ruby
    class Ebnewtool < Formula
      desc "EarlBear NewTool CLI - Docker-wrapped ebnewtool"
-     homepage "https://github.com/bytesofpurpose/homebrew-earlbear"
-     url "https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz"
+     homepage "https://github.com/EarlBear/homebrew-tap"
+     url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz"
      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
      license "MIT"
 
@@ -71,7 +71,7 @@ Scaffold a new Homebrew formula in `earlbear-homebrew/Formula/`.
 
 1. Ensure the CLI has a `setup.py` or `pyproject.toml`
 2. Scaffold formula with `include Language::Python::Virtualenv`
-3. Run `brew update-python-resources bytesofpurpose/earlbear/ebnewtool` to populate resource sha256s
+3. Run `brew update-python-resources earlbear/tap/ebnewtool` to populate resource sha256s
 4. Install block:
    ```ruby
    def install

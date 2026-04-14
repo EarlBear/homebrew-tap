@@ -4,7 +4,7 @@
 # What this tests:
 #   1. Fresh ubuntu:24.04 ARM64 container (no pre-installed tooling)
 #   2. Install Homebrew (linuxbrew) from scratch (NONINTERACTIVE)
-#   3. Tap bytesofpurpose/earlbear from the local repo (not GitHub)
+#   3. Tap earlbear/tap from the local repo (not GitHub)
 #   4. brew install ebdeck (Python venv formula — most complex formula)
 #   5. Mount plugins-bundle/ as a simulated cowork plugin directory
 #   6. Run each cowork shim (bin/<cli>) and verify:

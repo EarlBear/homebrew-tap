@@ -6,8 +6,8 @@ EarlBear Homebrew tap — install all EarlBear CLI tools on a Mac in one command
 
 ```bash
 # If you have this repo cloned locally (works whether repo is public or private):
-brew tap bytesofpurpose/earlbear /path/to/homebrew-earlbear
-brew install bytesofpurpose/earlbear/ebdeck
+brew tap earlbear/tap /path/to/homebrew-earlbear
+brew install earlbear/tap/ebdeck
 ```
 
 ## Private repo access
@@ -18,36 +18,36 @@ The repo is currently private. Three ways to tap it:
 
 ```bash
 # Clone the repo once
-git clone git@github.com:bytesofpurpose/homebrew-earlbear.git ~/homebrew-earlbear
+git clone git@github.com:EarlBear/homebrew-tap.git ~/homebrew-earlbear
 
 # Tap from the local path — works without any GitHub auth
-brew tap bytesofpurpose/earlbear ~/homebrew-earlbear
-brew install bytesofpurpose/earlbear/ebdeck
+brew tap earlbear/tap ~/homebrew-earlbear
+brew install earlbear/tap/ebdeck
 ```
 
 To update formulas later:
 ```bash
 cd ~/homebrew-earlbear && git pull
-brew upgrade bytesofpurpose/earlbear/ebdeck
+brew upgrade earlbear/tap/ebdeck
 ```
 
 **Option B — SSH (requires SSH key with repo access)**
 
 ```bash
-brew tap bytesofpurpose/earlbear git@github.com:bytesofpurpose/homebrew-earlbear.git
-brew install bytesofpurpose/earlbear/ebdeck
+brew tap earlbear/tap git@github.com:EarlBear/homebrew-tap.git
+brew install earlbear/tap/ebdeck
 ```
 
 **Option C — HTTPS with PAT (requires GitHub token with `repo` scope)**
 
 ```bash
 # Set token in env or embed in URL (never commit the token)
-HOMEBREW_GITHUB_API_TOKEN=ghp_... brew tap bytesofpurpose/earlbear \
-  https://github.com/bytesofpurpose/homebrew-earlbear
-brew install bytesofpurpose/earlbear/ebdeck
+HOMEBREW_GITHUB_API_TOKEN=ghp_... brew tap earlbear/tap \
+  https://github.com/EarlBear/homebrew-tap
+brew install earlbear/tap/ebdeck
 ```
 
-> If the repo is ever made public, `brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear` will work without any auth.
+> If the repo is ever made public, `brew tap earlbear/tap https://github.com/EarlBear/homebrew-tap` will work without any auth.
 
 ## Individual formulas
 
@@ -61,9 +61,9 @@ brew install bytesofpurpose/earlbear/ebdeck
 | `agent-cli` | in progress | Cloud agent admin |
 
 ```bash
-brew install bytesofpurpose/earlbear/ebdeck
-brew install bytesofpurpose/earlbear/ebjira
-brew install bytesofpurpose/earlbear/earlbear-plugins
+brew install earlbear/tap/ebdeck
+brew install earlbear/tap/ebjira
+brew install earlbear/tap/earlbear-plugins
 ```
 
 ## Credentials

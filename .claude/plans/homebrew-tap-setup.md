@@ -26,7 +26,7 @@ Local path: `/Users/omareid/Workspace/git/earlbear-homebrew` (already exists, em
 
 Users tap with:
 ```bash
-brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear
+brew tap earlbear/tap https://github.com/EarlBear/homebrew-tap
 ```
 
 ---
@@ -154,8 +154,8 @@ Each formula follows this pattern:
 ```ruby
 class Ebjira < Formula
   desc "EarlBear Jira CLI — Docker-wrapped ebjira"
-  homepage "https://github.com/bytesofpurpose/homebrew-earlbear"
-  url "https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v1.0.0.tar.gz"
+  homepage "https://github.com/EarlBear/homebrew-tap"
+  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "..."
   license "MIT"
 
@@ -244,12 +244,12 @@ end
 class Earlbear < Formula
   desc "EarlBear — install all CLI tools and Claude plugins in one command"
 
-  depends_on "bytesofpurpose/earlbear/ebjira"
-  depends_on "bytesofpurpose/earlbear/ebdocs"
-  depends_on "bytesofpurpose/earlbear/ebshop"
-  depends_on "bytesofpurpose/earlbear/ebdeck"
-  depends_on "bytesofpurpose/earlbear/agent-cli"
-  depends_on "bytesofpurpose/earlbear/earlbear-plugins"
+  depends_on "earlbear/tap/ebjira"
+  depends_on "earlbear/tap/ebdocs"
+  depends_on "earlbear/tap/ebshop"
+  depends_on "earlbear/tap/ebdeck"
+  depends_on "earlbear/tap/agent-cli"
+  depends_on "earlbear/tap/earlbear-plugins"
 
   def install
     bin.install "scripts/setup-env.sh" => "earlbear-setup"
@@ -261,7 +261,7 @@ class Earlbear < Formula
         earlbear-setup
 
       Or manually create: ~/.config/earlbear/.env
-      See: https://github.com/bytesofpurpose/homebrew-earlbear#credentials
+      See: https://github.com/EarlBear/homebrew-tap#credentials
     EOS
   end
 end
@@ -283,10 +283,10 @@ ENV PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
 
 # Tap earlbear and install non-Docker formulas
 # (ebjira/ebdocs/ebshop skipped — no Docker daemon in cowork)
-RUN brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear && \
-    brew install bytesofpurpose/earlbear/ebdeck \
-                 bytesofpurpose/earlbear/agent-cli \
-                 bytesofpurpose/earlbear/earlbear-plugins
+RUN brew tap earlbear/tap https://github.com/EarlBear/homebrew-tap && \
+    brew install earlbear/tap/ebdeck \
+                 earlbear/tap/agent-cli \
+                 earlbear/tap/earlbear-plugins
 
 WORKDIR /workspace
 ```
@@ -341,11 +341,11 @@ FROM homebrew/brew:latest
 
 # Point brew at the local tap dir (mounted at build time)
 COPY . /tmp/tap/
-RUN brew tap bytesofpurpose/earlbear /tmp/tap
+RUN brew tap earlbear/tap /tmp/tap
 
 # Install non-Docker formulas (Docker daemon not available in container)
-RUN brew install --build-from-source bytesofpurpose/earlbear/ebdeck
-RUN brew install --build-from-source bytesofpurpose/earlbear/agent-cli
+RUN brew install --build-from-source earlbear/tap/ebdeck
+RUN brew install --build-from-source earlbear/tap/agent-cli
 
 # Smoke test
 RUN ebdeck --help && echo "✓ ebdeck OK"
@@ -386,7 +386,7 @@ sleep 30
 echo "==> Installing Homebrew + tap in VM..."
 tart exec "$VM_NAME" -- /bin/bash -c "
   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
-  brew tap bytesofpurpose/earlbear https://github.com/bytesofpurpose/homebrew-earlbear
+  brew tap earlbear/tap https://github.com/EarlBear/homebrew-tap
   brew install earlbear
 "
 
@@ -536,7 +536,7 @@ bump-and-release: ## Tag a new release (updates sha256 in formulas, pushes tag)
 8. **Validation suite** — `validation/audit/`, `validation/docker/`, `validation/tart/`, `validation/smoke/`
 9. **Makefile** — `sync-sources`, `bump-and-release`, `validate*` targets
 10. **Local test** — `make validate-audit && make validate-docker && make validate-smoke`
-11. **GitHub repo** — create `bytesofpurpose/homebrew-earlbear` (private), push, verify `brew tap` works
+11. **GitHub repo** — create `EarlBear/homebrew-tap` (private), push, verify `brew tap` works
 12. **CLAUDE.md** — document recipe catalog table, update workflow, secrets options, validation tiers
 
 ---
@@ -551,8 +551,8 @@ make validate-audit
 make validate-docker
 
 # Step 3: Tier 4 — smoke test local install
-brew tap bytesofpurpose/earlbear /Users/omareid/Workspace/git/earlbear-homebrew
-brew install --build-from-source bytesofpurpose/earlbear/earlbear
+brew tap earlbear/tap /Users/omareid/Workspace/git/earlbear-homebrew
+brew install --build-from-source earlbear/tap/earlbear
 make validate-smoke
 
 # Step 4: Tier 3 — full VM test (once tap is pushed to GitHub)

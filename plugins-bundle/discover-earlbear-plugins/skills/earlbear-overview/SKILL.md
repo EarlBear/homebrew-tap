@@ -51,13 +51,13 @@ EarlBear is split across three sibling checkouts under `~/Workspace/git/`:
 - **Editing a wireframe theme, or building/reviewing/QA-ing the 12-theme landing page?** → `earlbear-sites/`
 - **Building or exporting an ecommerce store?** → `earlbear-sites/` (`make ecomm-*`)
 - **Importing a Claude share URL as a catalog artifact?** → `earlbear-sites/` (`/import-artifact`)
-- **Publishing to `bytesofpurpose.github.io/earlbear/`?** → `earlbear-sites/` (`/publish` or `make publish`) — it force-pushes through `../earlbear/`'s git worktree, which is why the gh-pages URL stays stable.
+- **Publishing to `earlbear.github.io/landing/`?** → `earlbear-sites/` (`/publish` or `make publish`) — it force-pushes through `../earlbear/`'s git worktree, which is why the gh-pages URL stays stable.
 - **Rotating `STATICRYPT_PASSWORD`?** → `earlbear-sites/` (`/reset-password`)
 - **Authoring or generating a deck?** → `earlbear-clis/deck-cli/` via `ebdeck`, or from `earlbear/` via `make deck-cli-*` targets. The deck-authoring skills live at `earlbear-clis/.claude/skills/`.
 
 ## Single-publisher model
 
-Only **`earlbear-sites/`** writes to the `bytesofpurpose/earlbear` gh-pages branch. The live site URL stays `bytesofpurpose.github.io/earlbear/` because `make publish` stages `dist/public/` into a git worktree checked out inside `../earlbear/`, then force-pushes from there. This keeps the URL stable while cleanly owning the build in one repo.
+Only **`earlbear-sites/`** writes to the `earlbear/tap` gh-pages branch. The live site URL stays `earlbear.github.io/landing/` because `make publish` stages `dist/public/` into a git worktree checked out inside `../earlbear/`, then force-pushes from there. This keeps the URL stable while cleanly owning the build in one repo.
 
 **Never run publish targets from `earlbear/`.** It has no `publish` target anymore — that capability moved.
 
@@ -118,7 +118,7 @@ See `earlbear/.claude/skills/manage-cloud-agent/SKILL.md` and `extend-cloud-agen
 
 ## Supabase catalog
 
-The artifact catalog at `bytesofpurpose.github.io/earlbear/` fetches card data from Supabase at runtime. The `artifacts` table stores metadata for each card. Both repos touch this:
+The artifact catalog at `earlbear.github.io/landing/` fetches card data from Supabase at runtime. The `artifacts` table stores metadata for each card. Both repos touch this:
 
 - **`earlbear/`** owns the Supabase MCP setup (`make mcp-supabase`) and the catalog validation skill (`/validate-catalog`). The design doc is `earlbear/docs/design-supabase-catalog.md`.
 - **`earlbear-sites/`** owns the rendering — `scripts/generate-index.sh` builds `dist/public/index.html`, which fetches from Supabase at runtime. Preview assignment is managed via `/manage-previews` (in earlbear-sites).

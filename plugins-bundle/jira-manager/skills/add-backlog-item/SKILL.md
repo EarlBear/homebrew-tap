@@ -150,7 +150,7 @@ Also update `scripts/jira-card-mapping.json` with the new mapping entry.
 
 **Preview check:** After creating the Jira issue and syncing to Supabase, check if the artifact has a preview. If not, suggest running `/manage-previews` to add one. Artifacts without previews should not move to "active" status.
 
-**Add production URL comment:** If the artifact has a published location (e.g., `https://bytesofpurpose.github.io/earlbear/artifacts/artifact-tracker/`), add a comment to the Jira issue with the link. Check existing comments first to avoid duplicates.
+**Add production URL comment:** If the artifact has a published location (e.g., `https://earlbear.github.io/landing/artifacts/artifact-tracker/`), add a comment to the Jira issue with the link. Check existing comments first to avoid duplicates.
 
 **Tech designs and strategies are artifacts:** Items under Tech Designs or Business Strategies Epics should always get a Supabase row. Tag them with `tech-design` or `strategy` in the `tags` array. These represent the working-backwards vision and should appear on the artifact tracker board.
 

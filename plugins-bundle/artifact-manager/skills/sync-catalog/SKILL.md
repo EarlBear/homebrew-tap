@@ -190,7 +190,7 @@ For Jira issues that correspond to published artifacts, add a comment with the p
 ```bash
 # For issues linked to the artifact tracker:
 curl -X POST .../rest/api/3/issue/EARL-XX/comment \
-  -d '{"body": "Artifact preview: https://bytesofpurpose.github.io/earlbear/artifacts/artifact-tracker/ (encrypted)"}'
+  -d '{"body": "Artifact preview: https://earlbear.github.io/landing/artifacts/artifact-tracker/ (encrypted)"}'
 ```
 
 Only add if no such comment already exists (check existing comments first for idempotency).

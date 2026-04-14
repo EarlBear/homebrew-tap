@@ -1,6 +1,6 @@
 # Publish to GitHub Pages
 
-> **Context:** This skill manages the full publish workflow for `dist/public/` to the `gh-pages` branch of the sibling `../earlbear` checkout. earlbear-sites owns the build pipeline, but the live URL stays at `bytesofpurpose.github.io/earlbear/` — so `make publish` uses a git worktree inside `../earlbear` to force-push from there.
+> **Context:** This skill manages the full publish workflow for `dist/public/` to the `gh-pages` branch of the sibling `../earlbear` checkout. earlbear-sites owns the build pipeline, but the live URL stays at `earlbear.github.io/landing/` — so `make publish` uses a git worktree inside `../earlbear` to force-push from there.
 
 ## When to trigger
 
@@ -25,7 +25,7 @@ earlbear/                 ← sibling checkout. Owns the git remote.
          │
          │ git push --force origin gh-pages
          ▼
-bytesofpurpose.github.io/earlbear/   ← live site
+earlbear.github.io/landing/   ← live site
 ```
 
 `make publish` in earlbear-sites:
@@ -129,7 +129,7 @@ Use the `!` prefix so the user runs it in their own shell — the target is inte
 
 After publishing, check:
 
-1. The live site: `https://bytesofpurpose.github.io/earlbear/`
+1. The live site: `https://earlbear.github.io/landing/`
 2. If GitHub Pages isn't configured yet on the earlbear repo, tell the user to enable it: Settings → Pages → Source: Deploy from branch → `gh-pages` / `/ (root)`.
 3. Propagation typically takes 1–5 minutes.
 
@@ -159,4 +159,4 @@ make publish              # Cross-repo force-push to earlbear gh-pages (interact
 ## Important notes
 
 - **earlbear-sites is the ONLY publisher.** Do not run `make publish` from `../earlbear` — that's the old pipeline and no longer exists after the migration.
-- **The live URL is stable.** Even though the build lives here, the published URL is `bytesofpurpose.github.io/earlbear/` because the push targets earlbear's remote.
+- **The live URL is stable.** Even though the build lives here, the published URL is `earlbear.github.io/landing/` because the push targets earlbear's remote.

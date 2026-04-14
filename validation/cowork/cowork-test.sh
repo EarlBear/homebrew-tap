@@ -105,7 +105,7 @@ check "ebdeck --help"                 ebdeck --help
 check "ebdeck binary at brew bin"     test -x /home/linuxbrew/.linuxbrew/bin/ebdeck
 
 # earlbear-plugins formula
-check "brew list earlbear-plugins"    brew list --formula bytesofpurpose/earlbear/earlbear-plugins
+check "brew list earlbear-plugins"    brew list --formula earlbear/tap/earlbear-plugins
 check "install-plugins.sh at libexec" \
     test -f /home/linuxbrew/.linuxbrew/opt/earlbear-plugins/libexec/install-plugins.sh
 check "install-plugins.sh executable" \

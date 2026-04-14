@@ -18,10 +18,10 @@ make sync-sources
 ```
 
 ### 2. Create the release tarball (after pushing to GitHub)
-Once the new tag exists at `github.com/bytesofpurpose/homebrew-earlbear`:
+Once the new tag exists at `github.com/EarlBear/homebrew-tap`:
 ```bash
 NEW_VERSION=1.0.2
-URL="https://github.com/bytesofpurpose/homebrew-earlbear/archive/refs/tags/v${NEW_VERSION}.tar.gz"
+URL="https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v${NEW_VERSION}.tar.gz"
 curl -L "$URL" -o /tmp/tap-v${NEW_VERSION}.tar.gz
 SHA=$(sha256sum /tmp/tap-v${NEW_VERSION}.tar.gz | awk '{print $1}')
 echo "sha256: $SHA"
@@ -34,14 +34,14 @@ For each `Formula/*.rb`:
 
 ### 4. Update Python resource sha256s (ebdeck only)
 ```bash
-brew update-python-resources bytesofpurpose/earlbear/ebdeck
+brew update-python-resources earlbear/tap/ebdeck
 ```
 This auto-updates all `resource` sha256s in `Formula/ebdeck.rb`.
 
 ### 5. Run Tier 1 validation
 ```bash
 brew style Formula/*.rb
-brew audit --skip-style bytesofpurpose/earlbear/ebjira [...]
+brew audit --skip-style earlbear/tap/ebjira [...]
 ```
 
 ### 6. Commit + tag + push

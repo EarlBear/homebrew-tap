@@ -1,6 +1,6 @@
 # tap-manager
 
-Homebrew tap maintenance skills for `bytesofpurpose/earlbear`.
+Homebrew tap maintenance skills for `earlbear/tap`.
 
 ## Skills
 

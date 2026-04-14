@@ -9,5 +9,5 @@
     "validate-tap"
   ],
   "repo": "earlbear-homebrew",
-  "tap": "bytesofpurpose/earlbear"
+  "tap": "earlbear/tap"
 }

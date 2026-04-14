@@ -126,7 +126,7 @@ GitHub tag. This is implemented by:
    - Replace formula-level `sha256` with computed hash
    - **Do NOT** touch resource sha256s (PyPI package hashes)
 6. `git commit` the patched formulas
-7. `brew tap bytesofpurpose/earlbear /path/to/tap`
+7. `brew tap earlbear/tap /path/to/tap`
 
 The awk pattern used for step 5 is identical across all tiers:
 ```awk

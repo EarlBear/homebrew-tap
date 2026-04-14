@@ -44,8 +44,8 @@ Replace the current skeleton with a fully working script:
 6. In VM via SSH heredoc:
    - `cd ~/tap-src && git init && git add -A && git commit -m "tap snapshot"`
    - Build local tarball + patch formula URLs/sha256 (same awk pattern as Docker Tier 2)
-   - `brew tap bytesofpurpose/earlbear ~/tap-src`
-   - `brew install --build-from-source bytesofpurpose/earlbear/earlbear`
+   - `brew tap earlbear/tap ~/tap-src`
+   - `brew install --build-from-source earlbear/tap/earlbear`
 7. Run smoke tests in VM (pipe `validation/smoke/smoke-test.sh` over SSH)
 8. Cleanup: `tart delete $VM_NAME` (in EXIT trap)
 
