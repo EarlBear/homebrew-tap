@@ -28,7 +28,11 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 VM_NAME="earlbear-test-$(date +%s)"
-BASE_IMAGE="${TART_BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-base:latest}"
+# Pinned to a specific digest so `tart clone` always uses the locally cached
+# image and never triggers an unexpected ~6GB re-download.
+# To upgrade: tart pull ghcr.io/cirruslabs/macos-sequoia-base:latest
+#             then update this digest to match `tart list`.
+BASE_IMAGE="${TART_BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-base@sha256:2344190688dffe76ad38ebe375671759d9accee2821f36bcc0203cca1e90fced}"
 SKIP_DELETE="${SKIP_DELETE:-0}"
 VM_USER="admin"
 VM_PASS="admin"

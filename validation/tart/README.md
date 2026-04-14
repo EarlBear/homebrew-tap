@@ -12,8 +12,26 @@ brew install cirruslabs/cli/tart
 # 2. Install sshpass (for non-interactive SSH to VM)
 brew install hudochenkov/sshpass/sshpass
 
-# 3. Pull the base macOS image (~6GB, cached after first pull)
+# 3. Pull the base macOS image (~6GB, cached locally after this — never re-downloaded)
 make tart-pull
+```
+
+## Image caching — no re-download per run
+
+`tart clone` copies from the **local cached image** (~5s). The ~6GB download only
+happens once via `make tart-pull`. Subsequent `make validate-vm` runs clone from
+the local cache.
+
+The script pins to a specific image digest so it never pulls unexpectedly:
+```
+ghcr.io/cirruslabs/macos-sequoia-base@sha256:2344190...
+```
+
+To upgrade the pinned image:
+```bash
+make tart-pull          # pulls latest (~6GB if changed)
+tart list               # find the new sha256 digest
+# Update BASE_IMAGE digest in validation/tart/tart-test.sh
 ```
 
 ## Run

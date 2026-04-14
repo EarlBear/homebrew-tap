@@ -115,6 +115,13 @@ triggers:
       - "build.context must be `..` (repo root) so the Dockerfile COPY step can access Formula/, src/, plugins-bundle/."
       - "If you added new remoteEnv vars, add a matching assertion to validation/cowork/cowork-test.sh."
 
+  # --- Tart VM validation ---
+  - when_changed: "validation/tart/**"
+    remind:
+      - "Run `make validate-vm` to verify the test still passes (~15min, Apple Silicon + tart + sshpass)."
+      - "If you changed the pinned BASE_IMAGE digest in tart-test.sh, run `make tart-pull` first to ensure the image is cached locally."
+      - "To upgrade the pinned macOS image: `make tart-pull` → `tart list` → update the sha256 digest in validation/tart/tart-test.sh."
+
   # --- Cowork validation ---
   - when_changed: "validation/cowork/**"
     remind:
