@@ -273,7 +273,15 @@ SKIP_AMD=1 make build-plugin-ebjira # x86_64 only
 
 **Output**: `plugins-bundle/<plugin>/bin/<cli>-aarch64-linux` and `<cli>-x86_64-linux`
 
-After running, commit `plugins-bundle/<plugin>/bin/` to ship the binaries with the plugin.
+After running, commit the binaries via git LFS — they are automatically tracked by the `.gitattributes` pattern `plugins-bundle/**/bin/*-linux`:
+
+```bash
+git add plugins-bundle/<plugin>/bin/
+git commit -m "feat: add <cli> cowork plugin binaries"
+git push origin main   # LFS objects are pushed alongside the commit
+```
+
+The bash shim (no `-linux` suffix) is stored in regular git. Only the compiled binaries go through LFS.
 
 ### Validate
 
