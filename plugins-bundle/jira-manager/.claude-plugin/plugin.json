@@ -3,5 +3,22 @@
   "description": "Create, groom, and manage Jira issues — backlog hygiene, epic taxonomy, stub handling, and ebjira CLI reference.",
   "version": "1.0.0",
   "author": { "name": "Omar Eid" },
-  "license": "MIT"
+  "license": "MIT",
+  "confirm": [
+    { "op": "create_issue",       "match": "issue create" },
+    { "op": "delete_issue",       "match": "issue delete" },
+    { "op": "transition_issue",   "match": "issue transition",   "unless_flag": "--dry-run" },
+    { "op": "bulk_transition",    "match": "bulk transition",    "unless_flag": "--dry-run" },
+    { "op": "bulk_update",        "match": "bulk update",        "unless_flag": "--dry-run" },
+    { "op": "delete_sprint",      "match": "sprint delete" },
+    { "op": "create_sprint",      "match": "sprint create" },
+    { "op": "delete_epic",        "match": "epic delete" },
+    { "op": "manifest_apply",     "match": "manifest apply",     "unless_flag": "--dry-run" },
+    { "op": "seed_apply",         "match": "seed apply",         "unless_flag": "--dry-run" },
+    { "op": "delete_workflow",    "match": "workflow delete" },
+    { "op": "delete_issuetype",   "match": "issuetype delete" },
+    { "op": "delete_component",   "match": "component delete" },
+    { "op": "delete_field",       "match": "field delete" },
+    { "op": "delete_filter",      "match": "filter delete" }
+  ]
 }

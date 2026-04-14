@@ -3,5 +3,27 @@
   "description": "Shopify storefront management — products, customers, inventory, themes, and declarative store conformance",
   "version": "1.0.0",
   "author": { "name": "Omar Eid" },
-  "license": "MIT"
+  "license": "MIT",
+  "confirm": [
+    { "op": "create_product",       "match": "product create" },
+    { "op": "update_product",       "match": "product update",        "unless_flag": "--dry-run" },
+    { "op": "delete_product",       "match": "product delete" },
+    { "op": "create_customer",      "match": "customer create" },
+    { "op": "update_customer",      "match": "customer update",       "unless_flag": "--dry-run" },
+    { "op": "cancel_order",         "match": "order cancel" },
+    { "op": "delete_discount",      "match": "discount delete" },
+    { "op": "delete_draft_order",   "match": "draft-order delete" },
+    { "op": "complete_draft_order", "match": "draft-order complete" },
+    { "op": "disable_gift_card",    "match": "gift-card disable" },
+    { "op": "publish_theme",        "match": "theme publish" },
+    { "op": "delete_navigation",    "match": "navigation delete" },
+    { "op": "apply_navigation",     "match": "navigation apply-manifest", "unless_flag": "--dry-run" },
+    { "op": "delete_script_tag",    "match": "script-tag delete" },
+    { "op": "delete_webhook",       "match": "webhook delete" },
+    { "op": "delete_metafield",     "match": "metafield delete" },
+    { "op": "inventory_adjust",     "match": "inventory adjust",      "unless_flag": "--dry-run" },
+    { "op": "inventory_set",        "match": "inventory set",         "unless_flag": "--dry-run" },
+    { "op": "disable_locale",       "match": "locale disable" },
+    { "op": "delete_page",          "match": "page delete" }
+  ]
 }

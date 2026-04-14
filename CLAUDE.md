@@ -43,8 +43,22 @@ make validate-smoke    # Tier 4: smoke test local install (~10s)
 make validate-vm       # Tier 3: Tart macOS VM — full clean-room (~15min)
 make validate-cowork   # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
 
-# 4. Release
+# 4. Build cowork plugin binaries (cross-compile CLIs for the cowork VM)
+make build-plugin-binaries          # all CLIs, both arches (~20min, requires Docker)
+make build-plugin-ebjira            # single CLI
+SKIP_ARM=1 make build-plugin-ebjira # x86_64 only (faster on Intel CI)
+
+# 5. Validate plugin binaries run in the cowork VM environment
+make validate-plugin-binaries       # compile ebjira + run in ubuntu:24.04 ARM64 (~8min)
+SKIP_BUILD=1 make validate-plugin-binaries  # re-run against existing binary (~1min)
+
+# 6. Release (tag + GitHub Release + upload plugin binaries as assets)
 make bump-and-release VERSION=1.0.1
+make release-plugin-binaries        # upload binaries to an existing tag's release
+
+# Plugin binaries are stored in Git LFS.
+# After cloning: git lfs pull   (hydrates binaries from LFS storage)
+# Verify LFS status: make lfs-status
 ```
 
 ## Validation tiers
@@ -56,10 +70,11 @@ make bump-and-release VERSION=1.0.1
 | 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS (Apple Silicon) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
+| 5b | `make validate-plugin-binaries` | ~8min | Compile ebjira via PyInstaller → run in ubuntu:24.04 ARM64 → assert `--help` exits cleanly (Apple Silicon + Docker + apple/container) |
 
 ## Skills
 
-Three skills cover the common tap operations. Invoke with `/skill-name`.
+Five skills cover the common tap operations. Invoke with `/skill-name`.
 
 | Skill | Description |
 |---|---|
@@ -67,6 +82,7 @@ Three skills cover the common tap operations. Invoke with `/skill-name`.
 | `/release` | Full release flow: sync sources → validate → tag → push → patch sha256. |
 | `/sync` | Sync `src/` from sibling repos, report what changed, run audit tier. |
 | `/inspect-claude-internals` | Inspect a macOS Electron app (Claude Desktop or similar) to discover VM/container architecture, MCP tools, and plugin binary layout. Writes findings to `docs/<app>-internals.md`. |
+| `/make-cowork-plugin` | Convert an EarlBear Claude plugin to work inside the Claude Desktop cowork VM. Covers binary packaging (PyInstaller), the cowork shim pattern, confirm rules, credential injection, and `make build-plugin-*` targets. |
 
 ## Secrets strategy
 

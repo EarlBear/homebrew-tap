@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+_mnt="${BASH_SOURCE[0]}"
+while [[ "$_mnt" != "/" && "$(basename "$_mnt")" != "mnt" ]]; do
+  _mnt="$(dirname "$_mnt")"
+done
+source "$_mnt/.cowork-lib/shim.sh"
+cowork_gate "$@"
+cowork_exec ebdeck "$@"

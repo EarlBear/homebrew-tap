@@ -3,5 +3,12 @@
   "description": "Author Drive docs, manage the EarlBear knowledge base, prepare decision docs, and leverage the ebdocs, ebshop, and ebjira CLIs.",
   "version": "1.0.0",
   "author": { "name": "Omar Eid" },
-  "license": "MIT"
+  "license": "MIT",
+  "confirm": [
+    { "op": "delete_doc",    "match": "doc delete" },
+    { "op": "share_add",     "match": "share add" },
+    { "op": "share_remove",  "match": "share remove" },
+    { "op": "sync_push",     "match": "sync push",    "unless_flag": "--dry-run" },
+    { "op": "drive_upload",  "match": "drive upload" }
+  ]
 }

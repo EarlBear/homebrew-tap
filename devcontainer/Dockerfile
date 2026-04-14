@@ -5,7 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Base dependencies for Homebrew
 RUN apt-get update && apt-get install -y \
     git curl build-essential procps file \
-    python3.11 python3.11-venv python3-pip \
+    python3 python3-venv python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # Create linuxbrew user (Homebrew installer requires non-root on Linux)

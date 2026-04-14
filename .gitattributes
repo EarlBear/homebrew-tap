@@ -1,3 +1,6 @@
 # Force LF line endings for shell scripts and Ruby formulas
 *.sh   text eol=lf
 *.rb   text eol=lf
+
+# Store compiled cowork plugin binaries in Git LFS
+plugins-bundle/**/bin/*-linux filter=lfs diff=lfs merge=lfs -text

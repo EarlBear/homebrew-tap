@@ -3,5 +3,8 @@
   "description": "Generate, review, and publish presentation decks using Marp, Slidev, python-pptx, and Figma Slides",
   "version": "1.0.0",
   "author": { "name": "Omar Eid" },
-  "license": "MIT"
+  "license": "MIT",
+  "confirm": [
+    { "op": "publish_deck", "match": "publish", "unless_flag": "--dry-run" }
+  ]
 }
