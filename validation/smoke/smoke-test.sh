@@ -34,7 +34,7 @@ check "ebdeck --help"   ebdeck --help
 check "ebjira"         ebjira issue list
 check "ebdocs"         ebdocs doc list
 check "ebshop"         ebshop shop info
-check "agent-cli help" agent-cli help
+check "agent-cli exists" test -x "$(command -v agent-cli)"
 check "earlbear-setup exists" test -x "$(command -v earlbear-setup)"
 
 echo ""

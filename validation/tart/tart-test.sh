@@ -80,23 +80,18 @@ trap cleanup EXIT
 
 # ── SSH helper (non-interactive, password via sshpass) ────────────────────────
 
+# Common SSH options — IdentitiesOnly=yes prevents the SSH agent from offering
+# keys from the macOS keychain, which causes "Too many authentication failures"
+# when the VM rejects them all before sshpass can supply the password.
+_SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o IdentitiesOnly=yes -o ConnectTimeout=10"
+
 ssh_cmd() {
-    sshpass -p "$VM_PASS" ssh \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -o LogLevel=ERROR \
-        -o ConnectTimeout=10 \
-        "${VM_USER}@${VM_IP}" "$@"
+    sshpass -p "$VM_PASS" ssh $_SSH_OPTS "${VM_USER}@${VM_IP}" "$@"
 }
 
 ssh_script() {
     # Pipe a local script over SSH (stdin)
-    sshpass -p "$VM_PASS" ssh \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -o LogLevel=ERROR \
-        -o ConnectTimeout=10 \
-        "${VM_USER}@${VM_IP}" /bin/bash -s
+    sshpass -p "$VM_PASS" ssh $_SSH_OPTS "${VM_USER}@${VM_IP}" /bin/bash -s
 }
 
 rsync_to_vm() {
@@ -107,7 +102,7 @@ rsync_to_vm() {
         --exclude='*.pyc' \
         --exclude='__pycache__/' \
         --exclude='plugins-bundle/*/bin/*-linux' \
-        -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
+        -e "ssh $_SSH_OPTS" \
         "$@"
 }
 
@@ -144,6 +139,7 @@ for i in $(seq 1 40); do
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
         -o LogLevel=ERROR \
+        -o IdentitiesOnly=yes \
         -o ConnectTimeout=5 \
         "${VM_USER}@${VM_IP}" "exit 0" 2>/dev/null; then
         SSH_READY=1
@@ -212,8 +208,18 @@ git commit -q -m "patch local urls"
 # Tap from local git repo
 brew tap bytesofpurpose/earlbear ~/tap-src
 
-# Install earlbear meta-formula (pulls in all non-Docker formulas)
-brew install --build-from-source bytesofpurpose/earlbear/earlbear
+# Install earlbear meta-formula.
+# Docker-wrapped formulas (ebjira, ebdocs, ebshop) will log a post_install warning
+# ("failed to connect to Docker daemon") — this is expected; no Docker daemon in VM.
+# brew exits non-zero when post_install fails, so we assert the binaries are present
+# rather than relying on exit code.
+brew install --build-from-source bytesofpurpose/earlbear/earlbear || true
+
+# Assert key binaries landed regardless of Docker post_install exit code
+for bin in ebdeck ebjira ebdocs ebshop agent-cli earlbear-setup; do
+    test -x "$(brew --prefix)/bin/$bin" || \
+        { echo "ERROR: $bin not found at $(brew --prefix)/bin/$bin" >&2; exit 1; }
+done
 
 echo "✓ Homebrew install complete"
 REMOTE
