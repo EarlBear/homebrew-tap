@@ -1,34 +1,28 @@
-FROM ubuntu:24.04
+FROM earlbear-cowork-base:local
 # cowork-sim/Dockerfile — Tier 5c: cowork simulation image.
 #
-# Builds ubuntu:24.04 + Homebrew + earlbear tap + installs all non-Docker formulas.
+# Builds on top of earlbear-cowork-base:local (ubuntu + linuxbrew, ~2min base).
+# Adds: local tap + sha256 patch + brew install ebdeck + earlbear-plugins.
+#
 # Used by validation/cowork-sim/cowork-sim-test.sh to simulate:
 #   "fresh cowork container → brew install → mount plugins → run shims"
 #
 # Build context: repo root
 #   container build -f validation/cowork-sim/Dockerfile -t earlbear-cowork-sim:local .
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && apt-get install -y \
-    git curl build-essential procps file \
-    python3 python3-venv python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create linuxbrew user (Homebrew requires non-root on Linux)
-RUN useradd -m -s /bin/bash linuxbrew && \
-    echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+#
+# One-time base setup:
+#   container build -f validation/cowork-sim/Dockerfile.base -t earlbear-cowork-base:local .
+#   (or: make cowork-sim-build-base)
+#
+# Incremental rebuild (formula change, no Homebrew reinstall):
+#   make validate-cowork-sim          # rebuilds sim layer only (~1-2min)
+#   SKIP_BREW=1 make validate-cowork-sim  # skip image build entirely
 
 # Copy tap source into image (build from local repo, no GitHub auth)
 COPY --chown=linuxbrew:linuxbrew . /tmp/tap-src/
 
 USER linuxbrew
 WORKDIR /home/linuxbrew
-
-# Install Homebrew
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
 
 # Stage tap as a local git repo (brew tap requires git history)
 RUN cp -r /tmp/tap-src /home/linuxbrew/tap && \

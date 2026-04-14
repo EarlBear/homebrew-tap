@@ -1,0 +1,29 @@
+FROM ubuntu:24.04
+# cowork-sim/Dockerfile.base — Tier 5c base layer.
+#
+# Contains ubuntu:24.04 + apt deps + Homebrew (linuxbrew) only.
+# Built once via: make cowork-sim-build-base
+# Tagged as:      earlbear-cowork-base:local
+#
+# Splitting linuxbrew install into a separate image avoids the ~2min
+# Homebrew install on every sim image rebuild. The base only needs
+# rebuilding when the pinned ubuntu version or apt deps change.
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    git curl build-essential procps file \
+    python3 python3-venv python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create linuxbrew user (Homebrew requires non-root on Linux)
+RUN useradd -m -s /bin/bash linuxbrew && \
+    echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER linuxbrew
+WORKDIR /home/linuxbrew
+
+# Install Homebrew (~2min, cached in base image after first build)
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"

@@ -1,7 +1,7 @@
-.PHONY: help sync-sources bump-and-release release-plugin-binaries lfs-status \
-        validate validate-audit validate-docker validate-smoke validate-vm tart-pull validate-cowork validate-plugin-binaries validate-cowork-sim \
+.PHONY: help sync-sources bump-and-release release-plugin-binaries lfs-status install-hooks \
+        validate validate-audit validate-docker validate-smoke validate-vm tart-pull tart-build-base validate-cowork validate-plugin-binaries validate-cowork-sim cowork-sim-build-base \
         build-plugin-binaries build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
-        clean
+        clean clean-container-cache
 
 GREEN  := \033[0;32m
 YELLOW := \033[0;33m
@@ -97,6 +97,13 @@ lfs-status: ## Show which plugin binaries are tracked in git LFS
 	@echo "$(BLUE)Git LFS tracked files in plugins-bundle/:$(NC)"
 	@git lfs ls-files 2>/dev/null | grep "plugins-bundle" || echo "  (none yet — stage the binaries with 'git add plugins-bundle/*/bin/*-linux')"
 
+install-hooks: ## Install git hooks (secrets scan + large-file guard) into .git/hooks/
+	@echo "$(BLUE)==> Installing git hooks...$(NC)"
+	@cp scripts/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "$(GREEN)✓ Installed .git/hooks/pre-commit (gitleaks secrets scan + large-file guard)$(NC)"
+	@echo "$(BLUE)  Requires: brew install gitleaks$(NC)"
+
 # ── Cowork plugin binaries ─────────────────────────────────────────────────────
 #
 # Cross-compile Python CLIs into self-contained single-file binaries for cowork
@@ -185,6 +192,21 @@ tart-pull: ## Pull the Tart macOS base image (~6GB, one-time setup for validate-
 	tart pull ghcr.io/cirruslabs/macos-sequoia-base:latest
 	@echo "$(GREEN)✓ Base image pulled. Run 'make validate-vm' to use it.$(NC)"
 
+tart-build-base: ## Build Tart base VM snapshot with Homebrew pre-installed (~10min, saves time on every validate-vm run)
+	@command -v tart >/dev/null 2>&1 || { \
+		echo "$(YELLOW)tart not found. Install with: brew install cirruslabs/cli/tart$(NC)"; \
+		exit 1; \
+	}
+	@command -v sshpass >/dev/null 2>&1 || { \
+		echo "$(YELLOW)sshpass not found. Install: brew install hudochenkov/sshpass/sshpass$(NC)"; \
+		exit 1; \
+	}
+	@[ "$$(uname -m)" = "arm64" ] || { \
+		echo "$(YELLOW)tart-build-base requires Apple Silicon (arm64).$(NC)"; \
+		exit 1; \
+	}
+	bash validation/tart/tart-build-base.sh
+
 validate-vm: ## Tier 3 — full clean-room brew install from local source in Tart macOS VM (~15min, Apple Silicon)
 	@command -v tart >/dev/null 2>&1 || { \
 		echo "$(YELLOW)tart not found. Install: brew install cirruslabs/cli/tart$(NC)"; \
@@ -213,7 +235,26 @@ validate-plugin-binaries: ## Tier 5b — compile all 4 CLIs + run in ubuntu:24.0
 	}
 	bash validation/plugin-binaries/test.sh
 
-validate-cowork-sim: ## Tier 5c — fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, Apple Silicon + apple/container)
+cowork-sim-build-base: ## Build linuxbrew base image for cowork-sim (~2min, one-time; speeds up validate-cowork-sim rebuilds)
+	@command -v container >/dev/null 2>&1 || { \
+		echo "$(YELLOW)apple/container not found.$(NC)"; \
+		echo "$(YELLOW)Install from: https://github.com/apple/container/releases$(NC)"; \
+		echo "$(YELLOW)Then run: container system start$(NC)"; \
+		exit 1; \
+	}
+	@[ "$$(uname -m)" = "arm64" ] || { \
+		echo "$(YELLOW)cowork-sim-build-base requires Apple Silicon (arm64).$(NC)"; \
+		exit 1; \
+	}
+	@echo "$(BLUE)==> Building linuxbrew base image (earlbear-cowork-base:local)...$(NC)"
+	container build \
+		--platform linux/arm64 \
+		-f validation/cowork-sim/Dockerfile.base \
+		-t earlbear-cowork-base:local \
+		.
+	@echo "$(GREEN)✓ Base image built. Subsequent validate-cowork-sim builds skip the ~2min Homebrew install.$(NC)"
+
+validate-cowork-sim: ## Tier 5c — fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min first run, ~2min with SKIP_BREW=1, Apple Silicon + apple/container)
 	@command -v container >/dev/null 2>&1 || { \
 		echo "$(YELLOW)apple/container not found.$(NC)"; \
 		echo "$(YELLOW)Install from: https://github.com/apple/container/releases$(NC)"; \
@@ -264,3 +305,11 @@ clean: ## Remove Docker/container build cache and PyInstaller dist artifacts
 	       src/ebshop/dist src/ebshop/build src/ebshop/*.spec \
 	       src/ebdeck/dist src/ebdeck/build src/ebdeck/*.spec 2>/dev/null || true
 	@echo "$(GREEN)✓ Cleaned$(NC)"
+
+clean-container-cache: ## Remove stopped buildkit container (frees up ~20-30GB of build cache disk space)
+	@echo "$(BLUE)==> Stopping and removing buildkit build cache container...$(NC)"
+	@command -v container >/dev/null 2>&1 || { echo "apple/container not installed"; exit 0; }
+	@container stop buildkit 2>/dev/null || true
+	@container rm   buildkit 2>/dev/null || true
+	@container system df
+	@echo "$(GREEN)✓ Build cache cleared. Next build will re-create buildkit (~5s overhead).$(NC)"

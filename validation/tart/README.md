@@ -14,6 +14,9 @@ brew install hudochenkov/sshpass/sshpass
 
 # 3. Pull the base macOS image (~6GB, cached locally after this — never re-downloaded)
 make tart-pull
+
+# 4. (Optional but recommended) Build the Homebrew snapshot — saves ~5min per validate-vm run
+make tart-build-base
 ```
 
 ## Image caching — no re-download per run
@@ -31,7 +34,26 @@ To upgrade the pinned image:
 ```bash
 make tart-pull          # pulls latest (~6GB if changed)
 tart list               # find the new sha256 digest
-# Update BASE_IMAGE digest in validation/tart/tart-test.sh
+# Update BASE_IMAGE digest in validation/tart/tart-test.sh AND tart-build-base.sh
+```
+
+## Homebrew snapshot — skip the ~5min brew install
+
+`make tart-build-base` creates `earlbear-brew-base:local` — a VM snapshot with
+Homebrew pre-installed. When this snapshot exists, `make validate-vm` clones from
+it instead of the raw base image, skipping the Homebrew install step:
+
+```
+Without snapshot:  VM boot ~1min + Homebrew install ~5min + tap+install ~5min + tests ~30s = ~12min
+With snapshot:     VM boot ~1min + tap+install ~5min + tests ~30s = ~7min
+```
+
+Rebuild the snapshot when you upgrade the pinned `BASE_IMAGE` digest.
+
+```bash
+make tart-build-base           # (~10min, once)
+make validate-vm               # now uses snapshot automatically
+USE_BASE_SNAPSHOT=0 make validate-vm  # bypass snapshot (raw base)
 ```
 
 ## Run
@@ -42,8 +64,7 @@ make validate-vm
 bash validation/tart/tart-test.sh
 ```
 
-Takes ~15 minutes on Apple Silicon (VM boot ~1min, Homebrew install ~10min,
-smoke tests ~30s).
+Takes ~12 minutes with the Homebrew snapshot, ~15 minutes from scratch.
 
 ## What it does
 

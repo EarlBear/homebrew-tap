@@ -12,3 +12,6 @@ src/*/build/
 src/*/dist/
 src/*.spec
 src/**/*.spec
+
+# Generated at test runtime from heredoc in cowork-sim-test.sh — not committed
+validation/cowork-sim/.cowork-lib/

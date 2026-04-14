@@ -118,9 +118,10 @@ triggers:
   # --- Tart VM validation ---
   - when_changed: "validation/tart/**"
     remind:
-      - "Run `make validate-vm` to verify the test still passes (~15min, Apple Silicon + tart + sshpass)."
-      - "If you changed the pinned BASE_IMAGE digest in tart-test.sh, run `make tart-pull` first to ensure the image is cached locally."
-      - "To upgrade the pinned macOS image: `make tart-pull` → `tart list` → update the sha256 digest in validation/tart/tart-test.sh."
+      - "Run `make validate-vm` to verify the test still passes (~12min with snapshot, ~15min without, Apple Silicon + tart + sshpass)."
+      - "If you changed the pinned BASE_IMAGE digest in tart-test.sh, update it in tart-build-base.sh too — both must pin the same digest."
+      - "To upgrade the pinned macOS image: `make tart-pull` → `tart list` → update the sha256 digest in both tart-test.sh AND tart-build-base.sh → `make tart-build-base` to rebuild the snapshot."
+      - "After changing the pinned digest, run `make tart-build-base` to rebuild the Homebrew snapshot from the new base (~10min, one-time)."
 
   # --- Cowork validation ---
   - when_changed: "validation/cowork/**"
@@ -132,14 +133,23 @@ triggers:
   - when_changed: "validation/cowork-sim/**"
     remind:
       - "Run `make validate-cowork-sim` to verify the simulation still passes (Apple Silicon + apple/container required)."
-      - "SKIP_BREW=1 skips the brew image build and reuses the existing image (~3min). SKIP_BUILD=1 also skips PyInstaller compile."
-      - "The stub shim.sh at validation/cowork-sim/.cowork-lib/shim.sh must stay in sync with the contract of /Applications/Claude.app/.../cowork-plugin-shim.sh."
+      - "SKIP_BREW=1 skips the sim image build and reuses the existing image (~2min). SKIP_BUILD=1 also skips PyInstaller compile."
+      - "The stub shim.sh is embedded as a heredoc in cowork-sim-test.sh (not in .cowork-lib/ — that file is gitignored and regenerated at runtime). Edit the heredoc in cowork-sim-test.sh, not the generated file."
+      - "If you changed Dockerfile.base (apt deps, Homebrew version): run `make cowork-sim-build-base` to rebuild the base image, then `make validate-cowork-sim` to rebuild the sim layer on top."
+      - "Dockerfile.base (linuxbrew only) and Dockerfile (tap + brew install) are split deliberately — only rebuild the base when the base inputs change."
 
   # --- Claude internals inspection ---
   - when_changed: "docs/claude-app-internals.md"
     remind:
       - "If the Claude Desktop version changed, re-run the inspection steps to check if coworkd, vmBundle paths, or MCP tool names changed."
       - "If plugin binary layout or shim protocol changed, update the 'Building Cowork-Compatible Skills' section and Task #72."
+
+  # --- Git pre-commit hook ---
+  - when_changed: "scripts/pre-commit"
+    remind:
+      - "Run `make install-hooks` to install the updated hook into `.git/hooks/pre-commit` — the source lives in `scripts/pre-commit` and must be manually installed after changes."
+      - "Test the large-file guard: stage a >500KB file not in .gitattributes and verify the commit is blocked with a clear error message."
+      - "Mirror this hook to sibling repos (earlbear, earlbear-clis) if the change is not repo-specific."
 
   # --- Hook infrastructure ---
   - when_changed: ".claude/hooks/living-artifacts.yaml"
@@ -162,3 +172,5 @@ triggers:
     remind:
       - "If you edited the Skills section, verify each skill name has a matching `.claude/skills/<name>/skill.md`."
       - "If you edited the validation tiers table, verify `Makefile` targets match the documented commands."
+      - "If you added a new binary file type to the repo, add it to `.gitattributes` for LFS tracking (see Repo tenets § No large files in git objects)."
+      - "If you added a new slow setup step, add a corresponding base-image target and document it in the Repo tenets § Cache slow setup table."

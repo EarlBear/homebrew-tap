@@ -88,10 +88,27 @@ if [[ "$SKIP_BREW" == "1" ]]; then
 else
     echo ""
     echo -e "${BLUE}==> Step 2: Build cowork-sim image (ubuntu:24.04 + linuxbrew + tap)${NC}"
-    echo    "    This takes ~5-10min on first run (Homebrew install + brew tap + brew install ebdeck)."
+
+    # Check whether the base image exists. If not, build it first (~2min one-time cost).
+    # The base contains linuxbrew only; the sim image adds tap + brew install.
+    # Splitting means formula changes only rebuild the sim layer, not linuxbrew.
+    BASE_IMAGE_TAG="earlbear-cowork-base:local"
+    if ! container image list 2>/dev/null | grep -q "earlbear-cowork-base"; then
+        echo -e "${YELLOW}Base image ($BASE_IMAGE_TAG) not found — building it now (~2min, one-time).${NC}"
+        echo    "    Tip: run 'make cowork-sim-build-base' once to pre-build this separately."
+        container build \
+            --platform linux/arm64 \
+            --tag "$BASE_IMAGE_TAG" \
+            --file "$REPO_ROOT/validation/cowork-sim/Dockerfile.base" \
+            "$REPO_ROOT"
+        echo -e "${GREEN}✓ Base image built: $BASE_IMAGE_TAG${NC}"
+    fi
+
+    echo    "    Building sim layer (tap + brew install ebdeck + earlbear-plugins)..."
     echo    "    Re-run with SKIP_BREW=1 to skip this step."
 
     container build \
+        --platform linux/arm64 \
         --tag "$IMAGE_TAG" \
         --file "$REPO_ROOT/validation/cowork-sim/Dockerfile" \
         "$REPO_ROOT"
@@ -115,12 +132,18 @@ cat > "$SHIM_LIB_DIR/shim.sh" <<'SHIMEOF'
 # Implements the same contract as /Applications/Claude.app/.../cowork-plugin-shim.sh
 # but without Claude Desktop's OAuth or permission bridge.
 
-_COWORK_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" 2>/dev/null && pwd)"
+# _COWORK_BIN_DIR is resolved at cowork_exec call time via BASH_SOURCE[0].
+# In the real cowork shim this is set relative to the shim.sh location inside
+# the plugin bundle. In the stub (simulation), shim.sh lives at
+# /mnt/.cowork-lib/shim.sh so /../bin doesn't exist — safe to skip with || true.
+_COWORK_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" 2>/dev/null && pwd)" || true
 
 cowork_require_token() {
     local var="$1"
     if [[ -z "${!var:-}" ]]; then
-        echo "${BASH_SOURCE[2]##*/}: not connected — open Claude settings → Plugins → Connect." >&2
+        # BASH_SOURCE[2] may be unbound in shallow call stacks; fall back gracefully.
+        local caller="${BASH_SOURCE[2]:-${BASH_SOURCE[1]:-shim}}"
+        echo "${caller##*/}: not connected — open Claude settings → Plugins → Connect." >&2
         exit 2
     fi
 }
@@ -225,16 +248,24 @@ check "ebdeck installed via brew" \
 check "ebdeck --help" /home/linuxbrew/.linuxbrew/bin/ebdeck --help
 
 # ── Plugin shim tests ────────────────────────────────────────────────────────
+# Note: bash 3.2 (macOS default) does not support declare -A associative arrays.
+# Use parallel indexed arrays instead.
 
-declare -A SHIM_PLUGINS=(
-    ["ebjira"]="jira-manager"
-    ["ebdocs"]="earlbear-docs-manager"
-    ["ebshop"]="shopify-manager"
-    ["ebdeck"]="deck-manager"
-)
+SHIM_CLIS=(ebjira ebdocs ebshop ebdeck)
+SHIM_DIRS=(jira-manager earlbear-docs-manager shopify-manager deck-manager)
+
+get_plugin_dir() {
+    local cli="$1"
+    case "$cli" in
+        ebjira)  echo "jira-manager" ;;
+        ebdocs)  echo "earlbear-docs-manager" ;;
+        ebshop)  echo "shopify-manager" ;;
+        ebdeck)  echo "deck-manager" ;;
+    esac
+}
 
 for cli in ebjira ebdocs ebshop ebdeck; do
-    plugin="${SHIM_PLUGINS[$cli]}"
+    plugin="$(get_plugin_dir "$cli")"
     shim="/mnt/${plugin}/bin/${cli}"
     binary="/mnt/${plugin}/bin/${cli}-aarch64-linux"
 
@@ -258,9 +289,9 @@ done
 echo ""
 echo "  Linker checks:"
 for cli in ebjira ebdocs ebshop ebdeck; do
-    plugin="${SHIM_PLUGINS[$cli]}"
+    plugin="$(get_plugin_dir "$cli")"
     binary="/mnt/${plugin}/bin/${cli}-aarch64-linux"
-    check_output "$cli: no linker errors" "ebjira\|ebdocs\|ebshop\|ebdeck\|jira\|docs\|shop\|deck\|usage\|help\|config_missing\|not connected" \
+    check_output "$cli: no linker errors" "ebjira|ebdocs|ebshop|ebdeck|jira|docs|shop|deck|[Uu]sage|help|config_missing|not connected" \
         bash -c "\"$binary\" --help 2>&1; true"
 done
 

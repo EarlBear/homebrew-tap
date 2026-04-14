@@ -33,6 +33,11 @@ VM_NAME="earlbear-test-$(date +%s)"
 # To upgrade: tart pull ghcr.io/cirruslabs/macos-sequoia-base:latest
 #             then update this digest to match `tart list`.
 BASE_IMAGE="${TART_BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-base@sha256:2344190688dffe76ad38ebe375671759d9accee2821f36bcc0203cca1e90fced}"
+# Snapshot with Homebrew pre-installed — skips the ~5min brew install step.
+# Build once with: make tart-build-base
+# Set USE_BASE_SNAPSHOT=0 to always start from the raw macOS base image.
+BREW_SNAPSHOT="earlbear-brew-base"
+USE_BASE_SNAPSHOT="${USE_BASE_SNAPSHOT:-1}"
 SKIP_DELETE="${SKIP_DELETE:-0}"
 VM_USER="admin"
 VM_PASS="admin"
@@ -110,10 +115,24 @@ rsync_to_vm() {
         "$@"
 }
 
-# ── Step 1: Clone base image ───────────────────────────────────────────────────
+# ── Step 1: Clone base image (or pre-baked snapshot) ─────────────────────────
+# If earlbear-brew-base exists (built via make tart-build-base), clone from
+# that snapshot — it has Homebrew pre-installed, saving ~5min per run.
+# Set USE_BASE_SNAPSHOT=0 to always start from the raw macOS base.
 
-echo -e "${BLUE}==> Cloning base VM image: $VM_NAME${NC}"
-tart clone "$BASE_IMAGE" "$VM_NAME"
+if [[ "$USE_BASE_SNAPSHOT" == "1" ]] && tart list 2>/dev/null | grep -q "^${BREW_SNAPSHOT}"; then
+    echo -e "${BLUE}==> Cloning Homebrew snapshot: $VM_NAME (from $BREW_SNAPSHOT — skips brew install)${NC}"
+    tart clone "$BREW_SNAPSHOT" "$VM_NAME"
+    HOMEBREW_PREINSTALLED=1
+else
+    if [[ "$USE_BASE_SNAPSHOT" == "1" ]]; then
+        echo -e "${YELLOW}==> Snapshot '$BREW_SNAPSHOT' not found — cloning raw base image (~10min for brew install).${NC}"
+        echo -e "${YELLOW}    Run 'make tart-build-base' once to build the snapshot and save ~5min per run.${NC}"
+    fi
+    echo -e "${BLUE}==> Cloning base VM image: $VM_NAME${NC}"
+    tart clone "$BASE_IMAGE" "$VM_NAME"
+    HOMEBREW_PREINSTALLED=0
+fi
 
 # ── Step 2: Start VM ──────────────────────────────────────────────────────────
 
@@ -164,9 +183,14 @@ ssh_cmd "mkdir -p ~/tap-src"
 rsync_to_vm "$REPO_ROOT/" "${VM_USER}@${VM_IP}:~/tap-src/"
 echo -e "${GREEN}    Synced${NC}"
 
-# ── Step 5: Install Homebrew + tap + install ───────────────────────────────────
+# ── Step 5: Install Homebrew (if needed) + tap + install ──────────────────────
 
-echo -e "${BLUE}==> Installing Homebrew + earlbear tap (this takes ~10min)...${NC}"
+if [[ "$HOMEBREW_PREINSTALLED" == "1" ]]; then
+    echo -e "${BLUE}==> Homebrew pre-installed in snapshot — skipping brew install (~5min saved)${NC}"
+    echo -e "${BLUE}==> Installing earlbear tap from local source...${NC}"
+else
+    echo -e "${BLUE}==> Installing Homebrew + earlbear tap (this takes ~10min)...${NC}"
+fi
 
 ssh_script <<'REMOTE'
 set -e

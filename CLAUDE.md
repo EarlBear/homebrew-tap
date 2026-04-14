@@ -31,6 +31,10 @@ All CLIs read from `~/.config/earlbear/.env`. Override with `EARLBEAR_CONFIG_DIR
 ## Development workflow
 
 ```bash
+# 0. One-time repo setup (after cloning)
+make install-hooks           # install pre-commit: gitleaks secrets scan + large-file guard
+brew install gitleaks        # required by the pre-commit hook
+
 # 1. Sync latest source from sibling repos
 make sync-sources
 
@@ -40,12 +44,15 @@ make sync-sources
 make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: smoke test local install (~10s)
-make validate-vm       # Tier 3: Tart macOS VM — clean-room from local source (~15min)
+make validate-vm       # Tier 3: Tart macOS VM — clean-room from local source (~15min, ~10min with snapshot)
                        #   prereqs (one-time): brew install cirruslabs/cli/tart
                        #                       brew install hudochenkov/sshpass/sshpass
-                       #                       make tart-pull  (~6GB image download)
+                       #                       make tart-pull       (~6GB image download)
+                       #   optional speedup:   make tart-build-base (~10min once, saves ~5min per run)
+make tart-build-base   # Build Homebrew-pre-installed VM snapshot (one-time; speeds up validate-vm by ~5min)
 make validate-cowork       # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
-make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, Apple Silicon)
+make cowork-sim-build-base # Build linuxbrew base image for cowork-sim (~2min one-time; speeds up rebuilds)
+make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, SKIP_BREW=1: ~2min)
 
 # 4. Build cowork plugin binaries (cross-compile CLIs for the cowork VM)
 make build-plugin-binaries          # all CLIs, both arches (~20min, requires Docker)
@@ -71,7 +78,7 @@ make release-plugin-binaries        # upload binaries to an existing tag's relea
 |---|---|---|---|
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
-| 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`) |
+| 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
 | 5b | `make validate-plugin-binaries` | ~20min (SKIP_BUILD=1: ~2min) | Compile all 4 CLIs via PyInstaller → run each in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-binaries`. (Apple Silicon + Docker + apple/container) |
@@ -89,6 +96,40 @@ Five skills cover the common tap operations. Invoke with `/skill-name`.
 | `/inspect-claude-internals` | Inspect a macOS Electron app (Claude Desktop or similar) to discover VM/container architecture, MCP tools, and plugin binary layout. Writes findings to `docs/<app>-internals.md`. |
 | `/make-cowork-plugin` | Convert an EarlBear Claude plugin to work inside the Claude Desktop cowork VM. Covers binary packaging (PyInstaller), the cowork shim pattern, confirm rules, credential injection, and `make build-plugin-*` targets. |
 | `/add-cli` | End-to-end guide for adding a new Python CLI: source sync, formula, cowork plugin, Makefile targets, all validation tiers, and release wiring in one pass. |
+
+## Repo tenets
+
+### No large files in git objects
+
+Compiled binaries (`plugins-bundle/**/bin/*-linux`) are stored in **Git LFS**,
+tracked via `.gitattributes`. Never commit raw binaries to git objects.
+
+- Verify before staging: `git lfs status` — LFS-tracked files show `(LFS: ...)`, not raw size.
+- New binary file types must be added to `.gitattributes` before first commit.
+- Generated scratch files (e.g. `validation/cowork-sim/.cowork-lib/`) are
+  gitignored — never commit files that are regenerated at test runtime.
+
+### Cache slow setup; isolate what changes
+
+Long-running tiers split into a stable **base** + a fast **sim** layer:
+
+| Base | What's in it | Rebuilt when |
+|---|---|---|
+| `earlbear-brew-base:local` (Tart VM) | macOS base + Homebrew installed | Pinned `BASE_IMAGE` digest changes |
+| `earlbear-cowork-base:local` (container) | ubuntu:24.04 + linuxbrew | apt deps or Homebrew version changes |
+| `earlbear-cowork-sim:local` (container) | base + tap + brew install | Formula changes |
+
+The sim/test layer is always rebuilt when formulas change; bases are never rebuilt
+unless their specific inputs change. `SKIP_BREW=1` / `USE_BASE_SNAPSHOT=0` provide
+escape hatches when you need to override caching.
+
+### Common setup — build the bases first
+
+After a fresh clone or after upgrading a pinned image:
+```bash
+make cowork-sim-build-base   # linuxbrew base for Tier 5c (~2min, one-time)
+make tart-build-base         # Homebrew VM snapshot for Tier 3 (~10min, one-time)
+```
 
 ## Secrets strategy
 

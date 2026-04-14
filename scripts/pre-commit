@@ -1,0 +1,74 @@
+#!/bin/sh
+# pre-commit hook for earlbear-homebrew
+# Install: make install-hooks
+#
+# Checks:
+#   1. gitleaks — block commits containing secrets
+#   2. Large-file guard — block staged files >500KB not tracked in Git LFS
+
+set -e
+
+# ── 1. Secrets scan (gitleaks) ────────────────────────────────────────────────
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo ""
+    echo "ERROR: gitleaks is not installed."
+    echo "Install it with: brew install gitleaks"
+    echo ""
+    echo "Commits are blocked until gitleaks is available."
+    echo "This is required to prevent secrets from being committed."
+    exit 1
+fi
+
+echo "Scanning staged changes for secrets..."
+gitleaks protect --staged --verbose
+
+# ── 2. Large-file guard ───────────────────────────────────────────────────────
+# Block any staged file >500KB that is not tracked by Git LFS.
+# This catches compiled binaries, VM images, or other large files accidentally
+# staged as raw git objects instead of LFS pointers.
+
+LIMIT_KB=500
+FAIL=0
+
+# Get list of staged files (added or modified, not deleted)
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+# Get list of files tracked by LFS (from .gitattributes patterns)
+# git check-attr returns "filter: lfs" for LFS-tracked paths
+while IFS= read -r file; do
+    # Skip if file no longer exists (e.g. renamed)
+    [ -f "$file" ] || continue
+
+    SIZE_KB=$(du -k "$file" | cut -f1)
+
+    if [ "$SIZE_KB" -gt "$LIMIT_KB" ]; then
+        # Check if this file is LFS-tracked
+        LFS_ATTR=$(git check-attr filter -- "$file" | awk '{print $3}')
+        if [ "$LFS_ATTR" != "lfs" ]; then
+            echo ""
+            echo "ERROR: Large file staged without LFS tracking:"
+            echo "  $file (${SIZE_KB}KB — limit is ${LIMIT_KB}KB)"
+            echo ""
+            echo "Either:"
+            echo "  a) Add an LFS tracking pattern to .gitattributes, then re-stage:"
+            echo "       echo '$file filter=lfs diff=lfs merge=lfs -text' >> .gitattributes"
+            echo "       git add .gitattributes '$file'"
+            echo "  b) Add the file to .gitignore if it should not be committed at all."
+            echo ""
+            FAIL=1
+        fi
+    fi
+done <<EOF
+$STAGED
+EOF
+
+if [ "$FAIL" -eq 1 ]; then
+    exit 1
+fi
+
+exit 0
