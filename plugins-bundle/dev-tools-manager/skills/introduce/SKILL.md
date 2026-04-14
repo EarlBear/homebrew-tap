@@ -13,6 +13,7 @@ The `dev-tools-manager` plugin provides developer tooling for EarlBear repos —
 | Skill | Trigger |
 |---|---|
 | `/secret-scan` | Scan the repo for leaked secrets, install gitleaks if missing, configure git hooks |
+| `/repo-maintenance` | Audit and clean stale agent worktrees, verify git hooks, check required Makefile targets |
 
 ## When to use this plugin
 
@@ -20,6 +21,8 @@ The `dev-tools-manager` plugin provides developer tooling for EarlBear repos —
 - Before committing or pushing sensitive changes
 - After rotating secrets (full repo scan)
 - When a teammate reports a potential leak
+- After a batch of Claude agent sessions (clean up stale worktrees)
+- Periodically to audit repo health across the org
 
 ## Applies to all repos
 
