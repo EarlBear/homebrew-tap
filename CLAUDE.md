@@ -70,7 +70,7 @@ make release-plugin-binaries        # upload binaries to an existing tag's relea
 | 3 | `make validate-vm` | ~15min | Full clean-room install on real macOS (Apple Silicon) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
-| 5b | `make validate-plugin-binaries` | ~8min | Compile ebjira via PyInstaller → run in ubuntu:24.04 ARM64 → assert `--help` exits cleanly (Apple Silicon + Docker + apple/container) |
+| 5b | `make validate-plugin-binaries` | ~20min (SKIP_BUILD=1: ~2min) | Compile all 4 CLIs via PyInstaller → run each in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-binaries`. (Apple Silicon + Docker + apple/container) |
 
 ## Skills
 

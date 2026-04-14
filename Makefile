@@ -184,7 +184,7 @@ validate-vm: ## Tier 3 — full brew install in Tart macOS VM (~15min, Apple Sil
 	}
 	bash validation/tart/tart-test.sh
 
-validate-plugin-binaries: ## Tier 5b — compile ebjira + run in ubuntu:24.04 ARM64 container (~8min, Apple Silicon + Docker + apple/container)
+validate-plugin-binaries: ## Tier 5b — compile all 4 CLIs + run in ubuntu:24.04 ARM64 container (~20min full, SKIP_BUILD=1 ~2min, CLI=ebjira for single)
 	@command -v docker >/dev/null 2>&1 || { \
 		echo "$(YELLOW)Docker not found — required for PyInstaller compile step.$(NC)"; \
 		exit 1; \

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # plugin-binaries/test.sh — end-to-end validation for cowork plugin binaries.
 #
-# Full loop: compile via Docker PyInstaller → run in ubuntu:24.04 ARM64
-# container → assert binary executes cleanly. Matches the environment of the
+# Full loop: compile all 4 CLIs via Docker PyInstaller → run in ubuntu:24.04 ARM64
+# container → assert each binary executes cleanly. Matches the environment of the
 # Claude Desktop cowork VM (Ubuntu ARM64).
 #
 # Requirements:
@@ -12,8 +12,9 @@
 #     https://github.com/apple/container/releases
 #
 # Usage:
-#   bash validation/plugin-binaries/test.sh
-#   SKIP_BUILD=1 bash validation/plugin-binaries/test.sh  # reuse existing binary
+#   bash validation/plugin-binaries/test.sh              # all 4 CLIs (~20min compile)
+#   SKIP_BUILD=1 bash validation/plugin-binaries/test.sh # reuse existing binaries (~2min)
+#   CLI=ebjira bash validation/plugin-binaries/test.sh   # single CLI (~5min compile)
 
 set -euo pipefail
 
@@ -54,42 +55,80 @@ trap cleanup EXIT
 
 # ── Step 1: Compile ───────────────────────────────────────────────────────────
 
-BINARY="$REPO_ROOT/plugins-bundle/jira-manager/bin/ebjira-aarch64-linux"
+# ── CLI definitions ───────────────────────────────────────────────────────────
+# Each entry: "plugin-dir:cli-name:expected-help-grep"
+# expected-help-grep is a case-insensitive pattern to confirm --help output looks right.
+
+declare -A CLI_PLUGINS=(
+    ["ebjira"]="jira-manager"
+    ["ebdocs"]="earlbear-docs-manager"
+    ["ebshop"]="shopify-manager"
+    ["ebdeck"]="deck-manager"
+)
+declare -A CLI_HELPGREP=(
+    ["ebjira"]="ebjira\|jira\|usage"
+    ["ebdocs"]="ebdocs\|docs\|usage"
+    ["ebshop"]="ebshop\|shopify\|usage"
+    ["ebdeck"]="ebdeck\|deck\|usage"
+)
+
+# Which CLIs to build (all by default; override with CLI=ebjira for a single one)
+TARGET_CLI="${CLI:-}"
+
+# ── Step 1: Compile ───────────────────────────────────────────────────────────
 
 if [[ "${SKIP_BUILD:-0}" == "1" ]]; then
-    echo -e "${BLUE}==> Skipping compile (SKIP_BUILD=1) — using existing binary${NC}"
-    if [[ ! -f "$BINARY" ]]; then
-        echo -e "${RED}Binary not found: $BINARY${NC}"
-        echo "Run without SKIP_BUILD=1 to compile it first."
-        exit 1
-    fi
+    echo -e "${BLUE}==> Skipping compile (SKIP_BUILD=1) — using existing binaries${NC}"
 else
-    echo -e "${BLUE}==> Step 1: Compile ebjira-aarch64-linux via Docker + PyInstaller${NC}"
-    make -C "$REPO_ROOT" build-plugin-ebjira SKIP_AMD=1
-    if [[ ! -f "$BINARY" ]]; then
-        echo -e "${RED}Compile step succeeded but binary not found at: $BINARY${NC}"
-        exit 1
+    echo -e "${BLUE}==> Step 1: Compile aarch64-linux binaries via Docker + PyInstaller${NC}"
+    if [[ -n "$TARGET_CLI" ]]; then
+        make -C "$REPO_ROOT" "build-plugin-${TARGET_CLI}" SKIP_AMD=1
+    else
+        make -C "$REPO_ROOT" build-plugin-binaries SKIP_AMD=1
     fi
-    echo -e "${GREEN}✓ Binary compiled: $BINARY ($(du -h "$BINARY" | cut -f1))${NC}"
 fi
 
-# ── Step 2: Run in ubuntu:24.04 ARM64 container ───────────────────────────────
+# Verify at least one binary was produced
+CLIS_TO_TEST=("${!CLI_PLUGINS[@]}")
+if [[ -n "$TARGET_CLI" ]]; then
+    CLIS_TO_TEST=("$TARGET_CLI")
+fi
+
+for cli in "${CLIS_TO_TEST[@]}"; do
+    plugin="${CLI_PLUGINS[$cli]}"
+    binary="$REPO_ROOT/plugins-bundle/$plugin/bin/${cli}-aarch64-linux"
+    if [[ ! -f "$binary" ]]; then
+        echo -e "${RED}Binary not found: $binary${NC}"
+        echo "Run without SKIP_BUILD=1 to compile it, or run 'make build-plugin-${cli} SKIP_AMD=1'."
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Found: $binary ($(du -h "$binary" | cut -f1))${NC}"
+done
+
+# ── Step 2: Run all binaries in ubuntu:24.04 ARM64 container ──────────────────
 
 echo ""
-echo -e "${BLUE}==> Step 2: Run binary in ubuntu:24.04 ARM64 container${NC}"
+echo -e "${BLUE}==> Step 2: Run binaries in ubuntu:24.04 ARM64 container${NC}"
 echo    "    (Same base as Claude Desktop cowork VM)"
 
-# Mount the bin/ directory directly into the container at /plugin/bin so we
-# can exec the binary without needing `container cp` (not supported in all
-# apple/container versions).
-PLUGIN_BIN_DIR="$(dirname "$BINARY")"
+# Build --volume mounts for all plugin bin/ directories (deduplicated)
+declare -A MOUNTED_DIRS
+VOLUME_ARGS=()
+for cli in "${CLIS_TO_TEST[@]}"; do
+    plugin="${CLI_PLUGINS[$cli]}"
+    bin_dir="$REPO_ROOT/plugins-bundle/$plugin/bin"
+    if [[ -z "${MOUNTED_DIRS[$bin_dir]+x}" ]]; then
+        MOUNTED_DIRS[$bin_dir]=1
+        VOLUME_ARGS+=(--volume "${bin_dir}:/plugin/${plugin}/bin:ro")
+    fi
+done
 
 container run \
     --name "$CONTAINER_NAME" \
     --detach \
-    --volume "$PLUGIN_BIN_DIR:/plugin/bin:ro" \
+    "${VOLUME_ARGS[@]}" \
     "$UBUNTU_IMAGE" \
-    sleep 300
+    sleep 600
 
 sleep 2
 
@@ -117,32 +156,41 @@ check() {
     fi
 }
 
-# Binary is present and executable
-check "binary is executable"         test -x /plugin/bin/ebjira-aarch64-linux
+for cli in "${CLIS_TO_TEST[@]}"; do
+    plugin="${CLI_PLUGINS[$cli]}"
+    binary_path="/plugin/${plugin}/bin/${cli}-aarch64-linux"
+    helpgrep="${CLI_HELPGREP[$cli]}"
 
-# Runs without crashing (--help exits 0; missing credentials exits 2 — both pass)
-check "ebjira --help runs"           /plugin/bin/ebjira-aarch64-linux --help
+    echo ""
+    echo "  ── $cli ──"
 
-# Verify it's the right binary (output should mention ebjira)
-output=$(container exec "$CONTAINER_NAME" /plugin/bin/ebjira-aarch64-linux --help 2>&1 || true)
-if echo "$output" | grep -qi "ebjira\|jira\|usage"; then
-    echo -e "  ${GREEN}✓${NC} --help output mentions ebjira/jira"
-    ((PASS++)) || true
-else
-    echo -e "  ${RED}✗${NC} --help output doesn't look like ebjira"
-    echo "    output: $(echo "$output" | head -3)"
-    ((FAIL++)) || true
-fi
+    # Binary is present and executable
+    check "$cli: binary is executable"  test -x "$binary_path"
 
-# No dynamic linker errors (would show up in output)
-if echo "$output" | grep -qi "no such file\|cannot open shared\|dynamic linker\|Segmentation"; then
-    echo -e "  ${RED}✗${NC} binary has runtime linker/crash errors"
-    echo "    output: $(echo "$output" | head -3)"
-    ((FAIL++)) || true
-else
-    echo -e "  ${GREEN}✓${NC} no linker or crash errors"
-    ((PASS++)) || true
-fi
+    # Runs without crashing (--help exits 0; missing credentials exits 2 — both pass)
+    check "$cli: --help runs"           "$binary_path" --help
+
+    # Verify help output looks right
+    output=$(container exec "$CONTAINER_NAME" "$binary_path" --help 2>&1 || true)
+    if echo "$output" | grep -qiE "$helpgrep"; then
+        echo -e "  ${GREEN}✓${NC} $cli: --help output looks correct"
+        ((PASS++)) || true
+    else
+        echo -e "  ${RED}✗${NC} $cli: --help output doesn't look right"
+        echo "    output: $(echo "$output" | head -3)"
+        ((FAIL++)) || true
+    fi
+
+    # No dynamic linker errors
+    if echo "$output" | grep -qi "no such file\|cannot open shared\|dynamic linker\|Segmentation"; then
+        echo -e "  ${RED}✗${NC} $cli: binary has runtime linker/crash errors"
+        echo "    output: $(echo "$output" | head -3)"
+        ((FAIL++)) || true
+    else
+        echo -e "  ${GREEN}✓${NC} $cli: no linker or crash errors"
+        ((PASS++)) || true
+    fi
+done
 
 # ── Results ───────────────────────────────────────────────────────────────────
 
@@ -156,5 +204,5 @@ if [[ "$FAIL" -gt 0 ]]; then
     exit 1
 else
     echo -e "${GREEN}✓ Plugin binary validation passed ($PASS tests)${NC}"
-    echo -e "  Binary runs cleanly in ubuntu:24.04 ARM64 — cowork VM compatible."
+    echo -e "  All binaries run cleanly in ubuntu:24.04 ARM64 — cowork VM compatible."
 fi
