@@ -50,7 +50,7 @@ fi
 
 # ── Remove existing snapshot ──────────────────────────────────────────────────
 
-if tart list 2>/dev/null | grep -q "^$SNAPSHOT_NAME"; then
+if tart list 2>/dev/null | grep -q "$SNAPSHOT_NAME"; then
     echo -e "${YELLOW}==> Removing existing snapshot: $SNAPSHOT_NAME${NC}"
     tart delete "$SNAPSHOT_NAME" 2>/dev/null || true
 fi
@@ -121,7 +121,7 @@ trap - EXIT
 tart rename "$BUILD_VM" "$SNAPSHOT_NAME"
 
 # Verify snapshot exists
-if tart list 2>/dev/null | grep -q "^$SNAPSHOT_NAME"; then
+if tart list 2>/dev/null | grep -q "$SNAPSHOT_NAME"; then
     echo -e "${GREEN}✓ Snapshot saved: $SNAPSHOT_NAME${NC}"
     echo -e "${GREEN}  validate-vm will use this snapshot (clones in ~5s, skips Homebrew install)${NC}"
     echo -e "${GREEN}  Rebuild when: pinned BASE_IMAGE digest changes${NC}"

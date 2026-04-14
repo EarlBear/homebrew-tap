@@ -120,7 +120,7 @@ rsync_to_vm() {
 # that snapshot — it has Homebrew pre-installed, saving ~5min per run.
 # Set USE_BASE_SNAPSHOT=0 to always start from the raw macOS base.
 
-if [[ "$USE_BASE_SNAPSHOT" == "1" ]] && tart list 2>/dev/null | grep -q "^${BREW_SNAPSHOT}"; then
+if [[ "$USE_BASE_SNAPSHOT" == "1" ]] && tart list 2>/dev/null | grep -q "${BREW_SNAPSHOT}"; then
     echo -e "${BLUE}==> Cloning Homebrew snapshot: $VM_NAME (from $BREW_SNAPSHOT — skips brew install)${NC}"
     tart clone "$BREW_SNAPSHOT" "$VM_NAME"
     HOMEBREW_PREINSTALLED=1
