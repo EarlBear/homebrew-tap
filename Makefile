@@ -40,6 +40,7 @@ sync-sources: ## Copy latest source from sibling repos into src/ and plugins-bun
 	cp $(EARLBEAR_ROOT)/earlbear/bin/agent-cli src/agent-cli/agent-cli.sh
 	chmod +x src/agent-cli/agent-cli.sh
 	rsync -a --delete \
+		--exclude='*/bin/' \
 		$(EARLBEAR_ROOT)/earlbear-claude-plugin-marketplace/plugins/ plugins-bundle/
 	rsync -a \
 		$(EARLBEAR_ROOT)/earlbear-claude-plugin-marketplace/.claude-plugin/ plugins-bundle/.claude-plugin/

@@ -79,6 +79,7 @@ triggers:
       - "If you changed `confirm` rules: the shim calls `cowork_gate` which reads these at runtime from the mounted plugin dir — no rebuild needed, but run `make validate-plugin-binaries` to verify the full stack still works."
       - "If you added a new CLI entry point: add a matching shim at `plugins-bundle/<plugin>/bin/<cli>` (executable bash wrapper) and compiled binaries `<cli>-aarch64-linux` + `<cli>-x86_64-linux`."
       - "If you changed `cowork_require_token` env var names in a shim: update the OAuth credential name in Claude Desktop Settings → Plugins → <plugin> → Connect."
+      - "Bump the plugin's `version` field following semver (MAJOR.MINOR.PATCH). Significant new commands = MINOR, breaking changes = MAJOR, confirm-rule tweaks = PATCH."
 
   # --- Cowork plugin binaries ---
   - when_changed: "plugins-bundle/**/bin/*"
@@ -87,6 +88,7 @@ triggers:
       - "Each plugin needs a matching cowork shim at `plugins-bundle/<plugin>/bin/<cli>` (the bash wrapper, chmod +x). Verify it exists and is executable."
       - "If you bumped a CLI version: re-run `make build-plugin-<cli>` to rebuild both arches, then commit the new binaries."
       - "Run `make validate-plugin-binaries` to confirm the binary executes cleanly in ubuntu:24.04 ARM64 (same base as the cowork VM)."
+      - "Binary changes mean a new release — bump the plugin version in plugin.json (semver) and run `make bump-and-release` to cut a tag and upload new assets."
 
   # --- Plugin binary validation ---
   - when_changed: "validation/plugin-binaries/**"
