@@ -121,6 +121,13 @@ triggers:
       - "Run `make validate-cowork` to verify the test script still passes (Apple Silicon + macOS 26+ required)."
       - "Smoke test exit code 2 (CONFIG_MISSING) is a pass — same convention as validation/smoke/smoke-test.sh. Keep this consistent."
 
+  # --- Cowork simulation ---
+  - when_changed: "validation/cowork-sim/**"
+    remind:
+      - "Run `make validate-cowork-sim` to verify the simulation still passes (Apple Silicon + apple/container required)."
+      - "SKIP_BREW=1 skips the brew image build and reuses the existing image (~3min). SKIP_BUILD=1 also skips PyInstaller compile."
+      - "The stub shim.sh at validation/cowork-sim/.cowork-lib/shim.sh must stay in sync with the contract of /Applications/Claude.app/.../cowork-plugin-shim.sh."
+
   # --- Claude internals inspection ---
   - when_changed: "docs/claude-app-internals.md"
     remind:

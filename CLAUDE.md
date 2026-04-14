@@ -41,7 +41,8 @@ make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: smoke test local install (~10s)
 make validate-vm       # Tier 3: Tart macOS VM — full clean-room (~15min)
-make validate-cowork   # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
+make validate-cowork       # Tier 5: cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
+make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, Apple Silicon)
 
 # 4. Build cowork plugin binaries (cross-compile CLIs for the cowork VM)
 make build-plugin-binaries          # all CLIs, both arches (~20min, requires Docker)
@@ -71,6 +72,7 @@ make release-plugin-binaries        # upload binaries to an existing tag's relea
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
 | 5b | `make validate-plugin-binaries` | ~20min (SKIP_BUILD=1: ~2min) | Compile all 4 CLIs via PyInstaller → run each in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-binaries`. (Apple Silicon + Docker + apple/container) |
+| 5c | `make validate-cowork-sim` | ~10min (SKIP_BREW=1: ~3min) | Fresh ubuntu:24.04 + linuxbrew install + tap earlbear + brew install ebdeck → mount plugin dirs → run cowork shims → assert exits 2 (CONFIG_MISSING). Closest automated simulation of cowork plugin delivery. (Apple Silicon + apple/container) |
 
 ## Skills
 

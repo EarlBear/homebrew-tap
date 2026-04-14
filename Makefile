@@ -1,5 +1,5 @@
 .PHONY: help sync-sources bump-and-release release-plugin-binaries lfs-status \
-        validate validate-audit validate-docker validate-smoke validate-vm validate-cowork validate-plugin-binaries \
+        validate validate-audit validate-docker validate-smoke validate-vm validate-cowork validate-plugin-binaries validate-cowork-sim \
         build-plugin-binaries build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
         clean
 
@@ -200,6 +200,19 @@ validate-plugin-binaries: ## Tier 5b — compile all 4 CLIs + run in ubuntu:24.0
 		exit 1; \
 	}
 	bash validation/plugin-binaries/test.sh
+
+validate-cowork-sim: ## Tier 5c — fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, Apple Silicon + apple/container)
+	@command -v container >/dev/null 2>&1 || { \
+		echo "$(YELLOW)apple/container not found.$(NC)"; \
+		echo "$(YELLOW)Install from: https://github.com/apple/container/releases$(NC)"; \
+		echo "$(YELLOW)Then run: container system start$(NC)"; \
+		exit 1; \
+	}
+	@[ "$$(uname -m)" = "arm64" ] || { \
+		echo "$(YELLOW)validate-cowork-sim requires Apple Silicon (arm64). Skipping.$(NC)"; \
+		exit 1; \
+	}
+	bash validation/cowork-sim/cowork-sim-test.sh
 
 validate-cowork: ## Tier 5 — cowork devcontainer via apple/container (~10min, Apple Silicon + macOS 26+)
 	@command -v container >/dev/null 2>&1 || { \
