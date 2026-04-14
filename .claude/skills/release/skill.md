@@ -185,3 +185,27 @@ git push
   different cadences.
 - If releasing a new formula, run `/add-formula` first and get it Docker-validated
   before including in a tap release.
+
+## GitHub tarball caching — when sha256 stays the same across tags
+
+GitHub generates tarballs deterministically. If two tags point to commits whose
+**packaged file trees are identical** (e.g. commits only touched `validation/`,
+`docs/`, `.claude/` — nothing in `Formula/` or `src/`), the archive bytes will be
+byte-for-byte identical and produce the same sha256.
+
+**How to detect this:** after tagging, if `shasum` of the new tarball == old tarball:
+```bash
+# Quick check: did any Formula/ or src/ files change between the two tags?
+git diff v1.0.0..v1.1.0 -- Formula/ src/ wrappers/
+```
+- If **empty**: sha256 is legitimately unchanged. Still update the `url` line in
+  every formula to point at the new tag (cosmetic, but keeps formulas honest).
+- If **non-empty**: GitHub should produce a different tarball. Wait 60s and re-download;
+  if still identical, something went wrong with the tag (check `git rev-parse vTAG^{}`
+  matches what GitHub shows).
+
+**State after v1.1.0 (current):**
+- All `Formula/*.rb` urls → `v1.1.0`
+- All `Formula/*.rb` sha256 → `0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5`
+  (same as v1.0.0 — expected, no Formula/src changes between the two tags)
+- `Casks/earlbear-installer.rb` → `installer-v1.0.0`, sha256 `cbfe28cc...`
