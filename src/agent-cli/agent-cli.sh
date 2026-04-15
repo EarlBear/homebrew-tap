@@ -12,21 +12,36 @@ set -euo pipefail
 # ── Paths ──
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EBJIRA="$SCRIPT_DIR/ebjira"
-ENV_FILE="$REPO_ROOT/.env"
+ENV_FILE="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}/.env"
 
-# ── Load .env ──
+# ── Load credentials ──
+# Sensitive tokens: read from macOS Keychain first, fall back to .env.
+# Non-secret config (URLs, emails, project keys): read from .env via grep.
+# Never source the whole .env — avoids bulk-exporting all vars into the shell.
 
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: .env not found at $REPO_ROOT. See .env.example." >&2
+    echo "Error: ~/.config/earlbear/.env not found. Run the EarlBear Installer or 'make keychain-to-env'." >&2
     exit 1
 fi
-# shellcheck disable=SC1090
-source "$ENV_FILE"
 
+_keychain_get() {
+    security find-generic-password -a "$USER" -s "earlbear.$1" -w 2>/dev/null \
+        || grep -s "^$1=" "$ENV_FILE" | cut -d= -f2-
+}
+_env_get() {
+    grep -s "^$1=" "$ENV_FILE" | cut -d= -f2-
+}
+
+JIRA_BASE_URL="$(_env_get JIRA_BASE_URL)"
+JIRA_USER_EMAIL="$(_env_get JIRA_USER_EMAIL)"
+JIRA_PROJECT="${JIRA_PROJECT:-$(_env_get JIRA_PROJECT)}"
 JIRA_PROJECT="${JIRA_PROJECT:-EARL}"
-CHECKIN_EPIC_KEY="${CHECKIN_EPIC_KEY:-}"
+JIRA_API_TOKEN="$(_keychain_get JIRA_API_TOKEN)"
+
+export JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN
+
+CHECKIN_EPIC_KEY="${CHECKIN_EPIC_KEY:-$(_env_get CHECKIN_EPIC_KEY)}"
 
 # ── Colors ──
 
