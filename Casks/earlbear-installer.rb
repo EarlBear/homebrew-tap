@@ -12,6 +12,15 @@ cask "earlbear-installer" do
 
   app "EarlBear Installer.app"
 
+  # Strip Gatekeeper quarantine flag so macOS doesn't show "unidentified developer" warning.
+  # This is safe for internal team tooling; notarization (Apple Dev account) not required.
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-d", "-r", "com.apple.quarantine",
+                          "#{appdir}/EarlBear Installer.app"],
+                   sudo: false
+  end
+
   # Remove app and any generated logs
   zap trash: [
     "~/Library/Logs/EarlBear",

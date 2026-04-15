@@ -37,7 +37,7 @@ sync-sources: ## Copy latest source from sibling repos into src/ and plugins-bun
 		--exclude='poc-pptx/' --exclude='poc-slidev/' --exclude='dist/' \
 		--exclude='assets/' --exclude='brands/' --exclude='content/' \
 		$(EARLBEAR_ROOT)/earlbear-clis/deck-cli/    src/ebdeck/
-	cp $(EARLBEAR_ROOT)/earlbear/bin/agent-cli src/agent-cli/agent-cli.sh
+	cp $(EARLBEAR_ROOT)/earlbear-claude-agent/bin/agent-cli src/agent-cli/agent-cli.sh
 	chmod +x src/agent-cli/agent-cli.sh
 	rsync -a --delete \
 		--exclude='*/bin/' \
