@@ -126,9 +126,7 @@ tracked via `.gitattributes`. Never commit raw binaries to git objects.
 **`brew tap` + git-lfs gotcha:** `brew tap` sanitizes its subprocess env, so
 `GIT_LFS_SKIP_SMUDGE` and `GIT_CONFIG_PARAMETERS` are ignored. If `filter.lfs.required=true`
 is in the global gitconfig and `git-lfs` is not on brew's internal PATH, the tap clone fails
-hard. The EarlBear installer works around this by temporarily neutralizing the LFS filter keys
-in `~/.gitconfig` before calling `brew tap` and restoring them with `git lfs install --force`
-after. See `earlbear-apps/CLAUDE.md` § Known gotchas for the full pattern.
+hard. See `earlbear-apps/docs/known-issues.md` for the full workaround used in `install.sh`.
 
 ### Cache slow setup; isolate what changes
 
