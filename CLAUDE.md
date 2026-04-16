@@ -123,6 +123,13 @@ tracked via `.gitattributes`. Never commit raw binaries to git objects.
 - Generated scratch files (e.g. `validation/cowork-sim/.cowork-lib/`) are
   gitignored — never commit files that are regenerated at test runtime.
 
+**`brew tap` + git-lfs gotcha:** `brew tap` sanitizes its subprocess env, so
+`GIT_LFS_SKIP_SMUDGE` and `GIT_CONFIG_PARAMETERS` are ignored. If `filter.lfs.required=true`
+is in the global gitconfig and `git-lfs` is not on brew's internal PATH, the tap clone fails
+hard. The EarlBear installer works around this by temporarily neutralizing the LFS filter keys
+in `~/.gitconfig` before calling `brew tap` and restoring them with `git lfs install --force`
+after. See `earlbear-apps/CLAUDE.md` § Known gotchas for the full pattern.
+
 ### Cache slow setup; isolate what changes
 
 Long-running tiers split into a stable **base** + a fast **sim** layer:
