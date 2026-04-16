@@ -6,6 +6,7 @@ class Earlbear < Formula
   license "MIT"
 
   depends_on "git-lfs"
+  depends_on "gh"
   depends_on "earlbear/tap/agent-cli"
   depends_on "earlbear/tap/earlbear-plugins"
   depends_on "earlbear/tap/ebdeck"
