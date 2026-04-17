@@ -1,8 +1,9 @@
 class EarlbearPlugins < Formula
   desc "EarlBear Claude plugin marketplace - installs all earlbear Claude skills"
   homepage "https://github.com/EarlBear/homebrew-tap"
-  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+  url "git@github.com:EarlBear/homebrew-tap.git",
+      tag:      "v1.1.0",
+      revision: "440f07b66f77578225da9f553b2e00488eaaa2cb"
   license "MIT"
 
   def install
