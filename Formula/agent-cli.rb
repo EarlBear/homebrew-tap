@@ -1,9 +1,8 @@
 class AgentCli < Formula
   desc "EarlBear cloud agent admin CLI - wraps ebjira with agent-specific commands"
   homepage "https://github.com/EarlBear/homebrew-tap"
-  url "git@github.com:EarlBear/homebrew-tap.git",
-      tag:      "v1.1.0",
-      revision: "440f07b66f77578225da9f553b2e00488eaaa2cb"
+  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.1.0.tar.gz"
+  sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
   license "MIT"
 
   depends_on "earlbear/tap/ebjira"
