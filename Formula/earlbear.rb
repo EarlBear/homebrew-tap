@@ -13,6 +13,7 @@ class Earlbear < Formula
   depends_on "earlbear/tap/ebdocs"
   depends_on "earlbear/tap/ebjira"
   depends_on "earlbear/tap/ebshop"
+  depends_on "earlbear/tap/ebtranscripts"
 
   def install
     bin.install "scripts/setup-env.sh" => "earlbear-setup"

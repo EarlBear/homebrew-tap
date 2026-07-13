@@ -1,0 +1,20 @@
+#!/bin/sh
+# Block commits that contain secrets. Install once: `make install-hooks`
+# (or: git config core.hooksPath .githooks). The SessionStart repo-setup-guard
+# also wires this automatically on a fresh clone.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo ""
+    echo "ERROR: gitleaks is not installed. Install with: brew install gitleaks"
+    echo "Commits are blocked until gitleaks is available."
+    exit 1
+fi
+
+echo "Scanning staged changes for secrets..."
+gitleaks protect --staged --verbose
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "ERROR: Secret found in staged changes. Commit blocked."
+    echo "If this is a false positive, add it to .gitleaks.toml allowlist."
+    exit 1
+fi

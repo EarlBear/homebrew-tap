@@ -1,0 +1,24 @@
+# Local Postgres for ebtranscripts dev/demo — the "local mode" counterpart to Supabase.
+# Runs the SAME portable cc_* migrations; prod-only (_prod) migrations are skipped locally.
+# Start: ./scripts/db.sh up   Migrate: ./scripts/db.sh migrate   Stop: ./scripts/db.sh down
+# See docs/local-cloud-arch-design.md for why local Docker Postgres mirrors Supabase.
+services:
+  db:
+    image: postgres:17
+    container_name: ebtranscripts-db
+    environment:
+      POSTGRES_USER: earlbear
+      POSTGRES_PASSWORD: earlbear
+      POSTGRES_DB: telemetry
+    ports:
+      - "54329:5432"   # non-default host port to avoid clashing with a local Postgres
+    volumes:
+      - ebtranscripts_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U earlbear -d telemetry"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ebtranscripts_pgdata:

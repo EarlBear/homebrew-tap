@@ -13,5 +13,9 @@ src/*/dist/
 src/*.spec
 src/**/*.spec
 
+# Individual dep wheels in plugins-bundle (unpacked by make build-plugin-wheels)
+# Only the *-bundle.zip files are committed (tracked in LFS)
+plugins-bundle/**/wheels/*.whl
+
 # Generated at test runtime from heredoc in cowork-sim-test.sh — not committed
 validation/cowork-sim/.cowork-lib/

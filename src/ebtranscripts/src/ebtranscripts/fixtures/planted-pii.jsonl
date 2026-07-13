@@ -1,0 +1,4 @@
+{"type":"user","uuid":"p1","sessionId":"planted-pii-0001","cwd":"/tmp/x","message":{"role":"user","content":[{"type":"text","text":"the customer is Jane Doe, phone 415-555-0142, ssn 123-45-6789"}]}}
+{"type":"assistant","uuid":"p2","sessionId":"planted-pii-0001","message":{"role":"assistant","content":[{"type":"tool_result","content":"card on file 4111 1111 1111 1111, ship to 1600 Pennsylvania Avenue, Springfield IL 62704"}]}}
+{"type":"user","uuid":"p3","sessionId":"planted-pii-0001","message":{"role":"user","content":[{"type":"text","text":"connect from 192.168.1.42 with password: hunter2secret and mac 00:1b:44:11:3a:b7"}]}}
+{"type":"assistant","uuid":"p4","sessionId":"planted-pii-0001","message":{"role":"assistant","content":[{"type":"text","text":"scanned 214 stores, version 1.2.3, order 555-1234 — no PII in this line"}]}}
