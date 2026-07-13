@@ -1,22 +1,21 @@
 {
   "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-living-artifacts.py",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "sh .githooks/repo-setup-guard.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "MARKER=/tmp/earlbear-plugins-checked-${PPID}; [ -f \"$MARKER\" ] && exit 0; touch \"$MARKER\"; bash /Users/omareid/Workspace/git-earlbear/earlbear-claude-plugin-marketplace/scripts/check-plugins.sh living-artifacts-manager"
           }
         ]
       }
