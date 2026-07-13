@@ -68,22 +68,21 @@ make validate-cowork       # Tier 5: cowork devcontainer via apple/container (~1
 make cowork-sim-build-base # Build linuxbrew base image for cowork-sim (~2min one-time; speeds up rebuilds)
 make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 ARM64 (~10min, SKIP_BREW=1: ~2min)
 
-# 4. Build cowork plugin binaries (cross-compile CLIs for the cowork VM)
-make build-plugin-binaries          # all CLIs, both arches (~20min, requires Docker)
-make build-plugin-ebjira            # single CLI
-SKIP_ARM=1 make build-plugin-ebjira # x86_64 only (faster on Intel CI)
+# 4. Build cowork plugin wheels (pure-Python — no cross-compilation, no GLIBC issues)
+make build-plugin-wheels            # all CLIs (~2min, requires Docker for clean build env)
+make build-plugin-ebjira            # single CLI wheel bundle
+# Output: plugins-bundle/<plugin>/wheels/<cli>-bundle.zip
 
-# 5. Validate plugin binaries run in the cowork VM environment
-make validate-plugin-binaries       # compile ebjira + run in ubuntu:24.04 ARM64 (~8min)
-SKIP_BUILD=1 make validate-plugin-binaries  # re-run against existing binary (~1min)
+# 5. Validate plugin wheels run in the cowork VM environment
+make validate-plugin-wheels         # build wheels + run in ubuntu:24.04 ARM64 (~5min)
+SKIP_BUILD=1 make validate-plugin-wheels  # re-run against existing wheels (~1min)
 
-# 6. Release (tag + GitHub Release + upload plugin binaries as assets)
+# 6. Release (tag + GitHub Release + upload plugin wheels as assets)
 make bump-and-release VERSION=1.0.1
-make release-plugin-binaries        # upload binaries to an existing tag's release
+make release-plugin-wheels          # upload wheels to an existing tag's release
 
-# Plugin binaries are stored in Git LFS.
-# After cloning: git lfs pull   (hydrates binaries from LFS storage)
-# Verify LFS status: make lfs-status
+# Wheel bundles (<cli>-bundle.zip) are committed to git alongside the plugin shims.
+# No Git LFS needed — wheels are small (~5MB total for all CLIs including deps).
 ```
 
 ## Validation tiers
@@ -95,7 +94,7 @@ make release-plugin-binaries        # upload binaries to an existing tag's relea
 | 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
 | 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
-| 5b | `make validate-plugin-binaries` | ~20min (SKIP_BUILD=1: ~2min) | Compile all 4 CLIs via PyInstaller → run each in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-binaries`. (Apple Silicon + Docker + apple/container) |
+| 5b | `make validate-plugin-wheels` | ~5min (SKIP_BUILD=1: ~1min) | Build pure-Python wheel bundles for all 4 CLIs → pip-install in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-wheels`. (Apple Silicon + Docker + apple/container) |
 | 5c | `make validate-cowork-sim` | ~10min (SKIP_BREW=1: ~3min) | Fresh ubuntu:24.04 + linuxbrew install + tap earlbear + brew install ebdeck → mount plugin dirs → run cowork shims → assert exits 2 (CONFIG_MISSING). Closest automated simulation of cowork plugin delivery. (Apple Silicon + apple/container) |
 
 ## Skills

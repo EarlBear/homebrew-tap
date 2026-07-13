@@ -44,6 +44,9 @@ RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap
 # Install ebdeck (Python venv formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebdeck
 
+# Install ebtranscripts (Python venv formula — no Docker required)
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebtranscripts
+
 # Install earlbear-plugins (shell script formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/earlbear-plugins || true
 

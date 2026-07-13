@@ -1,6 +1,8 @@
 # Force LF line endings for shell scripts and Ruby formulas
 *.sh   text eol=lf
 *.rb   text eol=lf
-
-# Store compiled cowork plugin binaries in Git LFS
-plugins-bundle/**/bin/*-linux filter=lfs diff=lfs merge=lfs -text
+# Cowork plugin delivery: wheel bundles stored in Git LFS
+# *-bundle.zip contains CLI wheel + all dep wheels for offline pip install
+plugins-bundle/**/wheels/*-bundle.zip filter=lfs diff=lfs merge=lfs -text
+# Old PyInstaller binaries (*-linux) are no longer used:
+# plugins-bundle/**/bin/*-linux filter=lfs diff=lfs merge=lfs -text

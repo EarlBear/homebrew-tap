@@ -4,3 +4,10 @@ useDefault = true
 [[allowlists]]
 description = "Supabase anon keys are intentionally public (RLS-protected)"
 regexes = ['''sb_publishable_[A-Za-z0-9_-]+''']
+
+[[allowlists]]
+description = "ebtranscripts planted-secret fixtures/sanitizer (synced from earlbear-clis) hold intentional synthetic secrets that prove the redaction layer. Fake and path-scoped."
+paths = [
+  '''src/ebtranscripts/src/ebtranscripts/fixtures/planted-secrets\.jsonl''',
+  '''src/ebtranscripts/src/ebtranscripts/main\.py''',
+]
