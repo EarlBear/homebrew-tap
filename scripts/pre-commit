@@ -1,73 +1,113 @@
 #!/bin/sh
-# pre-commit hook for earlbear-homebrew
-# Install: make install-hooks
+# Pre-commit hook for earlbear-homebrew.
 #
-# Checks:
-#   1. gitleaks — block commits containing secrets
-#   2. Large-file guard — block staged files >500KB not tracked in Git LFS
-
-set -e
+# Active via `core.hooksPath = .githooks` (the SessionStart repo-setup-guard and
+# `make install-hooks` both wire it). scripts/pre-commit is kept byte-identical
+# to this file so the copy install-hooks drops into .git/hooks behaves the same.
+#
+# Checks (in order, each blocks on failure):
+#   1. gitleaks            — no secrets in staged changes.
+#   2. generated-dir guard — plugins-bundle/ and src/ are GENERATED mirrors of the
+#                            source repos; hand-committing them clobbers LFS wheel
+#                            pointers and sweeps unrelated drift. Blocked unless
+#                            HOMEBREW_RELEASE=1 marks an intentional release.
+#   3. LFS + large-file    — every LFS-tracked staged file must be a pointer (not a
+#                            raw blob), and no non-LFS file may exceed the size cap.
 
 # ── 1. Secrets scan (gitleaks) ────────────────────────────────────────────────
-
 if ! command -v gitleaks >/dev/null 2>&1; then
     echo ""
-    echo "ERROR: gitleaks is not installed."
-    echo "Install it with: brew install gitleaks"
-    echo ""
+    echo "ERROR: gitleaks is not installed. Install with: brew install gitleaks"
     echo "Commits are blocked until gitleaks is available."
-    echo "This is required to prevent secrets from being committed."
+    exit 1
+fi
+echo "Scanning staged changes for secrets..."
+if ! gitleaks protect --staged --verbose; then
+    echo ""
+    echo "ERROR: Secret found in staged changes. Commit blocked."
+    echo "If this is a false positive, add it to .gitleaks.toml allowlist."
     exit 1
 fi
 
-echo "Scanning staged changes for secrets..."
-gitleaks protect --staged --verbose
-
-# ── 2. Large-file guard ───────────────────────────────────────────────────────
-# Block any staged file >500KB that is not tracked by Git LFS.
-# This catches compiled binaries, VM images, or other large files accidentally
-# staged as raw git objects instead of LFS pointers.
-
-LIMIT_KB=500
-FAIL=0
-
-# Get list of staged files (added or modified, not deleted)
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-
-if [ -z "$STAGED" ]; then
-    exit 0
+# ── 2. Generated-directory guard ──────────────────────────────────────────────
+# plugins-bundle/ and src/ are produced by `make sync-sources` and reconciled by
+# the release flow (which is LFS-aware). A stray `sync-sources` + commit clobbers
+# LFS wheel pointers (bundle.zip), deletes wheels, and folds unrelated per-plugin
+# drift into one commit. Edit the SOURCE repos instead — new skills/plugins reach
+# the bundle at the next release. Set HOMEBREW_RELEASE=1 for an intentional
+# release commit that regenerates the bundle on purpose.
+if [ -z "${HOMEBREW_RELEASE:-}" ]; then
+    GEN=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^(plugins-bundle|src)/' || true)
+    if [ -n "$GEN" ]; then
+        echo ""
+        echo "ERROR: staged changes touch generated dirs (plugins-bundle/ or src/):"
+        echo "$GEN" | sed 's/^/  /' | head -20
+        n=$(echo "$GEN" | wc -l | tr -d ' ')
+        [ "$n" -gt 20 ] && echo "  ... ($n files total)"
+        echo ""
+        echo "These are generated mirrors, not hand-edited sources:"
+        echo "  - Skills/plugins: edit earlbear-claude-plugin-marketplace; they reach"
+        echo "    plugins-bundle/ automatically at the next release."
+        echo "  - CLI code: edit earlbear-clis; it reaches src/ at the next release."
+        echo ""
+        echo "To cut a release (regenerates + reconciles LFS on purpose):"
+        echo "  HOMEBREW_RELEASE=1 git commit ...   (or use the release flow)"
+        echo "Skip (not recommended): git commit --no-verify"
+        exit 1
+    fi
 fi
 
-# Get list of files tracked by LFS (from .gitattributes patterns)
-# git check-attr returns "filter: lfs" for LFS-tracked paths
-while IFS= read -r file; do
-    # Skip if file no longer exists (e.g. renamed)
-    [ -f "$file" ] || continue
-
-    SIZE_KB=$(du -k "$file" | cut -f1)
-
-    if [ "$SIZE_KB" -gt "$LIMIT_KB" ]; then
-        # Check if this file is LFS-tracked
-        LFS_ATTR=$(git check-attr filter -- "$file" | awk '{print $3}')
-        if [ "$LFS_ATTR" != "lfs" ]; then
+# ── 3. LFS integrity + large-file guard ───────────────────────────────────────
+# For every staged file: if .gitattributes marks it LFS-tracked, it MUST be
+# committed as an LFS pointer (a naive rsync/copy can overwrite the pointer with
+# the real object — the exact way a bundle mirror clobbers LFS). Separately, any
+# non-LFS file over the size cap is blocked as a raw-blob accident.
+LIMIT_KB=500
+FAIL=0
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -n "$STAGED" ]; then
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        LFS_ATTR=$(git check-attr filter -- "$file" 2>/dev/null | awk '{print $3}')
+        if [ "$LFS_ATTR" = "lfs" ]; then
+            # Staged blob must be an LFS pointer, not the real object.
+            head_line=$(git show ":$file" 2>/dev/null | head -c 64)
+            case "$head_line" in
+                "version https://git-lfs.github.com/spec"*) : ;;  # ok: pointer
+                *)
+                    echo ""
+                    echo "ERROR: LFS-tracked file staged as a raw blob (not a pointer):"
+                    echo "  $file"
+                    echo "  A copy/rsync likely overwrote the LFS pointer with the real object."
+                    echo "  Restore the pointer: git rm --cached '$file' && git checkout HEAD -- '$file'"
+                    echo "  (or re-run through git-lfs so the clean filter re-pointerizes it)."
+                    echo ""
+                    FAIL=1
+                    ;;
+            esac
+            continue
+        fi
+        # Non-LFS: block large raw blobs.
+        [ -f "$file" ] || continue
+        SIZE_KB=$(du -k "$file" | cut -f1)
+        if [ "$SIZE_KB" -gt "$LIMIT_KB" ]; then
             echo ""
             echo "ERROR: Large file staged without LFS tracking:"
             echo "  $file (${SIZE_KB}KB — limit is ${LIMIT_KB}KB)"
-            echo ""
-            echo "Either:"
-            echo "  a) Add an LFS tracking pattern to .gitattributes, then re-stage:"
+            echo "  a) Add an LFS pattern to .gitattributes, then re-stage:"
             echo "       echo '$file filter=lfs diff=lfs merge=lfs -text' >> .gitattributes"
             echo "       git add .gitattributes '$file'"
-            echo "  b) Add the file to .gitignore if it should not be committed at all."
+            echo "  b) Or add it to .gitignore if it should not be committed."
             echo ""
             FAIL=1
         fi
-    fi
-done <<EOF
+    done <<EOF
 $STAGED
 EOF
+fi
 
 if [ "$FAIL" -eq 1 ]; then
+    echo "Commit blocked. Skip (not recommended): git commit --no-verify"
     exit 1
 fi
 
