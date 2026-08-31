@@ -26,7 +26,7 @@ The EarlBear ecosystem has two distinct layers of content:
 2. **Work vs reference content.** If the thing you want to create is really reference material, put it in `earlbear-content/gdocs/knowledge-base/` and only create a Jira ticket for actual implementation work.
 3. **Pick the right type for the hierarchy.** Jira only allows `Epic → Story/Task/Bug/Deliverable → Subtask`. Nothing at the middle level can parent anything else at the middle level.
 3a. **Size your deliverables.** Large deliverables (multiple user-facing capabilities) → create as Epic with Stories underneath. Small deliverables (single bounded output) → create as Deliverable with Sub-tasks underneath. See the sizing rule in Step 3 below.
-3b. **Classify your epics.** Every Epic must have an emoji prefix in the summary AND a label, picked from 6 mutually-exclusive categories: 📦 Deliverable, 🏢 Function, 📅 Initiative, 🗑️ Bin, 🦴 Stubs, 🤖 Generated. See the Epic Classification section in Step 3 below. Never manually create 🤖 Generated epics.
+3b. **Classify your epics.** Every Epic must have an emoji prefix in the summary AND a label, picked from 8 mutually-exclusive categories: 📦 Deliverable, 📝 Blogging, 🏢 Function, 🗺️ Strategy, 📅 Initiative, 🗑️ Bin, 🦴 Stubs, 🤖 Generated. See the Epic Classification section in Step 3 below. Never manually create 🤖 Generated epics.
 4. **Place under a parent from day one.** Orphan issues are invisible in roadmaps.
 5. **Sync locally after creating.** The content repo is the audit trail — pull after every batch of changes.
 6. **Use dry-run for re-parenting.** Always preview `sync push --dry-run` before applying.
@@ -88,13 +88,15 @@ Epic
 
 ### Epic classification (mandatory)
 
-Every Epic must be classified into exactly one of 5 categories. The category sets both an **emoji prefix in the summary** (visible everywhere) and a **label** (filterable via JQL).
+Every Epic must be classified into exactly one of 8 categories. The category sets both an **emoji prefix in the summary** (visible everywhere) and a **label** (filterable via JQL).
 
 | Category | Emoji | Label | What it is |
 |---|---|---|---|
 | **Deliverable** | 📦 | `epic:deliverable` | Finite project with a concrete end state |
 | **Function** | 🏢 | `epic:function` | Ongoing organizational capability or business activity |
+| **Blogging** | 📝 | `epic:blogging` | The ongoing content & PR publishing engine — the steady stream of blog posts, LinkedIn/PR-agent output, and credibility-building content. A domain-specific Function broken out for visibility. |
 | **Initiative** | 📅 | `epic:initiative` | Time-bound strategic push with a thesis but no fixed end state |
+| **Strategy** | 🗺️ | `epic:strategy` | A directional thesis — where we're headed and why. Sets direction and shapes *how and what* we plan, steering which initiatives we pursue. The abstraction **above** planning; it is neither the planning activity nor the execution. Produces initiatives. |
 | **Bin** | 🗑️ | `epic:bin` | Human-curated dumping ground for **heterogeneous** accumulated artifacts (mixed shapes — junk drawer) |
 | **Stubs** | 🦴 | `epic:stubs` | **Homogeneous** container for thin placeholder tickets awaiting scoping. Every child is a stub. Hidden from boards. |
 | **Generated** | 🤖 | `epic:generated` | **Agent-generated** container for automated outputs |
@@ -102,11 +104,13 @@ Every Epic must be classified into exactly one of 5 categories. The category set
 **Decision tree (use in order):**
 
 1. Is there a concrete end state? ("When X, Y, Z are done, this Epic closes") → **📦 Deliverable**
-2. Is this an organizational capability or recurring business activity the team operates continuously? → **🏢 Function**
-3. Is this a time-bound strategic push with a thesis but no fixed end state? → **📅 Initiative**
-4. Is this a homogeneous container of thin placeholder tickets awaiting scoping? → **🦴 Stubs**
-5. Is this a place where humans drop heterogeneous accumulated artifacts (logs, feedback) without work tracking? → **🗑️ Bin**
-6. Is this a container for automated agent output, where items are auto-created? → **🤖 Generated**
+2. Is this specifically the ongoing content / blog / PR publishing engine — the steady stream of posts, PR-agent output, and credibility content? → **📝 Blogging**
+3. Is this an organizational capability or recurring business activity the team operates continuously? → **🏢 Function**
+4. Is this a directional thesis that informs how and what we plan and steers which initiatives we pursue — the abstraction above planning, not the execution itself? → **🗺️ Strategy**
+5. Is this a time-bound strategic push with a thesis but no fixed end state? → **📅 Initiative**
+6. Is this a homogeneous container of thin placeholder tickets awaiting scoping? → **🦴 Stubs**
+7. Is this a place where humans drop heterogeneous accumulated artifacts (logs, feedback) without work tracking? → **🗑️ Bin**
+8. Is this a container for automated agent output, where items are auto-created? → **🤖 Generated**
 
 **Critical rules:**
 
@@ -119,8 +123,10 @@ Every Epic must be classified into exactly one of 5 categories. The category set
 **Examples from the current backlog:**
 
 - 📦 Deliverable: Knowledge Base, Internal Agents, Launch EarlBear, Automated Store Development
+- 📝 Blogging: Blogging
 - 🏢 Function: Client Discovery, Store Analysis, Outreach Pipeline, Sales Enablement, Platform & Infrastructure
-- 📅 Initiative: Launch EarlBear, Tech Designs, Business Strategies, Proof of Concepts
+- 🗺️ Strategy: Go To Market, Business Strategies, Vision
+- 📅 Initiative: Launch EarlBear, Tech Designs, Proof of Concepts
 - 🤖 Generated: Check-In / Check-Out (Watson auto-creates a daily subtask)
 
 ### Deliverable sizing rule (mandatory)

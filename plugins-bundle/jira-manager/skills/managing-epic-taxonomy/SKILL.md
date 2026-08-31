@@ -20,7 +20,9 @@ This table is the single source of truth. When the taxonomy changes, **this tabl
 |---|---|---|---|
 | Deliverable | 📦 | `epic:deliverable` | Finite project with a concrete end state. Has a definition of done. Eventually closes. |
 | Function | 🏢 | `epic:function` | Ongoing organizational capability or business activity. Never closes. Holds the recurring work of "running X". |
+| Blogging | 📝 | `epic:blogging` | The ongoing content & PR publishing engine — the steady stream of blog posts, LinkedIn/PR-agent output, and credibility-building content. A domain-specific Function broken out for visibility. |
 | Initiative | 📅 | `epic:initiative` | Time-bound strategic push. Has a thesis and a window of focus, but no fixed end state — spawns deliverables as the direction crystallizes, or pivots/dies. The calendar emoji emphasizes the temporal nature: initiatives have a window, not permanence. |
+| Strategy | 🗺️ | `epic:strategy` | A directional thesis — where we're headed and why. Sets direction and shapes *how and what* we plan, steering which initiatives we pursue. The abstraction **above** planning; it is neither the planning activity nor the execution. Produces initiatives. |
 | Bin | 🗑️ | `epic:bin` | Human-curated dumping ground for **heterogeneous** accumulated artifacts (mixed shapes — logs, loose ideas, feedback inbox) that don't yet warrant their own structure. Explicitly low-rigor. Contrast with Stubs, which is homogeneous. |
 | Stubs | 🦴 | `epic:stubs` | Homogeneous container for thin placeholder tickets awaiting scoping. Every child is the same shape: a stub (no user story, no GWT, no attachments, <200 char body). Lifecycle = scope-or-retire. Hidden from planning boards via JQL filter. |
 | Generated | 🤖 | `epic:generated` | Agent-auto-created container. **Never** created by humans. Used by automation when it needs an epic to attach generated stories to. |
@@ -176,9 +178,19 @@ Does this have a concrete definition of done — a state where you'd close it?
 ├── YES → 📦 Deliverable. STOP.
 └── NO → continue
 
+Is this specifically the ongoing content / blog / PR publishing engine — the
+steady stream of posts, PR-agent output, and credibility content?
+├── YES → 📝 Blogging. STOP.
+└── NO → continue
+
 Is this the recurring "running of" some ongoing capability or business area
 that will exist as long as the org exists?
 ├── YES → 🏢 Function. STOP.
+└── NO → continue
+
+Is this a directional thesis that informs how and what we plan and steers which
+initiatives we pursue — the abstraction above planning, not the execution itself?
+├── YES → 🗺️ Strategy. STOP.
 └── NO → continue
 
 Is this a strategic direction or thesis we're exploring, expected to spawn

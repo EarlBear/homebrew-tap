@@ -21,6 +21,7 @@ User says things like:
 | **Update Config** | "add status", "add component", "change workflow", "edit manifest" | [1. Update Manifest](#1-update-manifest) |
 | **Export** | "export", "snapshot", "capture Jira state" | [2. Export Jira State](#2-export-jira-state) |
 | **Bootstrap** | "bootstrap", "set up from scratch", "initialize manifest" | [3. Bootstrap from Scratch](#3-bootstrap-from-scratch) |
+| **Epics registry** | "add epic to manifest", "reconcile epics", "epic list drift", "sync epics block" | [4. Epics registry](#4-epics-registry) |
 
 If the intent is ambiguous, ask the user to clarify before proceeding.
 
@@ -144,6 +145,71 @@ bin/ebjira manifest diagram --output-dir docs/diagrams/
 
 ---
 
+## 4. Epics registry
+
+The manifest carries an `epics:` block — a **flat name/key registry**, one entry per epic:
+
+```yaml
+epics:
+  - key: EARL-1
+    summary: Client Discovery
+  - key: EARL-2
+    summary: Store Analysis
+  # ...
+```
+
+Its job is to give the rest of the manifest stable, human-readable handles for epics. For example the `agent:` section references it by key:
+
+```yaml
+agent:
+  checkin_epic: EARL-31   # resolves against the epics registry above
+```
+
+**This block is NOT where the epic taxonomy lives.** It only mirrors each epic's key and summary.
+
+### The manifest ↔ taxonomy boundary
+
+Two things about an epic that look like they belong here actually live elsewhere:
+
+- The **emoji prefix** in an epic's `summary` (📦 / 🏢 / 📝 / 🗺️ / 📅 / 🗑️ / 🦴 / 🤖)
+- The epic's **`epic:*` classification label** (`epic:deliverable`, `epic:function`, `epic:initiative`, …)
+
+Both live **per-epic** in `/Users/omareid/Workspace/git-earlbear/earlbear-content/jira/EARL/epics/<KEY>.yaml`, and are governed by the separate **`/managing-epic-taxonomy`** skill (the source of truth for *which* categories exist, their emoji, their labels, and mutual-exclusivity rules). The `epics:` registry here just mirrors the resulting keys + summaries (emoji prefix included, since it is part of the summary text).
+
+- To add/remove/modify an epic **category** (emoji, label, decision tree) → use **`/managing-epic-taxonomy`**, then reflect the changed summaries here.
+- To keep the manifest registry in step with what epics live in Jira → use the reconcile workflow below.
+
+### Reconcile the registry against live Jira
+
+The **source of truth for what epics exist** is Jira itself:
+
+```bash
+ebjira epic list --project EARL
+```
+
+After manual Jira changes (epics created, renamed, re-emoji'd, retired), reconcile the `epics:` block **by hand** so each entry matches live 1:1:
+
+1. Run `ebjira epic list --project EARL`.
+2. Hand-edit the `epics:` block so every entry's `key` + `summary` (**including the emoji prefix**) matches the live epic exactly:
+   - **Add** entries for epics present in Jira but missing from the block.
+   - **Update** summaries that have drifted (renames, re-classifications).
+   - **Mirror the emoji prefix** as it appears in the live summary.
+   - Remove entries for epics that no longer exist (confirm with the user first).
+
+> **Why by hand:** `bin/ebjira manifest diff` cannot currently see the gallery manifest — the Docker wrapper does not mount the gallery repo, so `manifest diff`/`apply` do not operate on this `epics:` block. Reconcile the epics list manually against `ebjira epic list` output rather than relying on `manifest diff`.
+
+### Where the canonical manifest physically lives
+
+The canonical manifest for project **EARL** is:
+
+```
+/Users/omareid/Workspace/git-earlbear/earlbear-gallery/manifests/jira/manifest.yaml
+```
+
+The relative path `manifests/jira/manifest.yaml` used throughout this skill resolves there when commands are run from the **earlbear-gallery** repo root.
+
+---
+
 ## Important Notes
 
 - **The manifest is a living document.** It is listed in `CLAUDE.md`'s living documents table. Update it whenever statuses, types, components, workflow, labels, board config, or agent config changes.
@@ -158,3 +224,6 @@ bin/ebjira manifest diagram --output-dir docs/diagrams/
 - `/refine-working-model` should run `manifest diff` as part of its process health check phase
 - `/manage-cloud-agent setup` references the manifest's `agent` section for JQL queues and allowed transitions
 - `/add-backlog-item` can read the manifest for valid issue types, components, and labels
+- **`/managing-epic-taxonomy`** — owns the epic taxonomy (emoji prefixes + `epic:*` labels in `earlbear-content/jira/EARL/epics/<KEY>.yaml`). This skill's `epics:` registry only mirrors keys + summaries; changes to categories start there. See [4. Epics registry](#4-epics-registry).
+
+> **Sibling skills** listed here live at `earlbear-claude-plugin-marketplace/plugins/jira-manager/skills/<name>/SKILL.md` (bundled at `earlbear-homebrew/plugins-bundle/jira-manager/skills/<name>/SKILL.md`) and are invoked as `/<name>`.
