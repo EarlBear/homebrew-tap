@@ -32,6 +32,6 @@ fi
 
 exec docker run --rm \
     --env-file "$ENV_FILE" \
-    "${MOUNT_ARGS[@]}" \
+    "${MOUNT_ARGS[@]+"${MOUNT_ARGS[@]}"}" \
     ebshop \
     "$@"

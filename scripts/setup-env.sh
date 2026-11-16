@@ -7,6 +7,21 @@ set -euo pipefail
 CONFIG_DIR="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}"
 ENV_FILE="$CONFIG_DIR/.env"
 
+# Answer --help before touching anything: without this, --help started the wizard and touched
+# the real settings file.
+case "${1:-}" in
+    -h|--help)
+        name="$(basename "$0")"
+        echo "Usage: $name"
+        echo ""
+        echo "Asks for each tool's credentials, one service at a time, and writes them to"
+        echo "  $ENV_FILE"
+        echo "Values already there are offered as the default; press Enter to keep them."
+        echo "Set EARLBEAR_CONFIG_DIR to write somewhere else."
+        exit 0
+        ;;
+esac
+
 GREEN='\033[0;32m'; YELLOW='\033[0;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 
 mkdir -p "$CONFIG_DIR"

@@ -87,10 +87,9 @@ RUN brew install earlbear/tap/<cli>
 RUN test -x $(brew --prefix)/bin/<cli>   # smoke test
 ```
 
-Add to `validation/smoke/smoke-test.sh`:
-```bash
-assert_binary "<cli>"
-```
+`validation/smoke/smoke-test.sh` needs no edit: it runs `--help` on every command each formula
+in `Formula/` installs, and fails unless it exits 0 and prints the command's own name. So the
+new CLI's `--help` must work with an empty settings file and no input.
 
 ---
 
@@ -222,7 +221,7 @@ git add plugins-bundle/<plugin-name>/
 git add src/<cli>/
 git add Formula/<cli>.rb
 git add Makefile
-git add validation/docker/Dockerfile validation/smoke/smoke-test.sh
+git add validation/docker/Dockerfile
 git add validation/plugin-binaries/test.sh
 git commit -m "feat(<cli>): add formula + cowork plugin + validation"
 ```
@@ -287,7 +286,6 @@ Whenever you add a new CLI, these files become stale and should be updated:
 | `Formula/<cli>.rb` | New formula |
 | `Formula/earlbear.rb` | New `depends_on` entry |
 | `validation/docker/Dockerfile` | New `brew install` + smoke test line |
-| `validation/smoke/smoke-test.sh` | New `assert_binary` line |
 | `validation/plugin-binaries/test.sh` | New CLI in the test loop |
 | `plugins-bundle/<plugin-name>/` | Shim + binaries + plugin.json |
 | `README.md` | Formula status table |

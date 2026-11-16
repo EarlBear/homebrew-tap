@@ -176,7 +176,7 @@ validate-docker: ## Tier 2 — brew install in Docker (~5min, non-Docker formula
 	docker build --no-cache --platform linux/amd64 -t earlbear-install-test -f validation/docker/Dockerfile .
 	@echo "$(GREEN)✓ Docker install test passed$(NC)"
 
-validate-smoke: ## Tier 4 — smoke test locally installed formulas (~10s)
+validate-smoke: ## Tier 4 — every installed formula's commands answer --help with their own name (~10s, Docker running)
 	@echo "$(BLUE)==> Tier 4: Smoke tests$(NC)"
 	bash validation/smoke/smoke-test.sh
 
