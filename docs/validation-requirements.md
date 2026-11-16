@@ -35,9 +35,10 @@ machine with no pre-existing tooling — the exact experience of a new user runn
 
 ### UC-3: Local smoke test after brew install
 **Who:** Developer after locally installing formulas  
-**Need:** Quick sanity check that binaries are on PATH and respond correctly  
+**Need:** Quick sanity check that every installed command is linked on PATH and answers `--help`
+with exit 0 and its own name, with no settings and no Keychain  
 **Satisfied by:** Tier 4 (smoke-test.sh)  
-**Time budget:** < 30s
+**Time budget:** ~1min (longer on the first run, while the Docker tools build their images)
 
 ### UC-4: Cowork devcontainer regression
 **Who:** Developer after changing the devcontainer or earlbear-plugins formula  

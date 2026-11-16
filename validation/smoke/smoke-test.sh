@@ -12,9 +12,10 @@
 # formula's bin/ folder, so renaming formulas or commands needs no edit here.
 #
 # The test controls what each command sees: standard input is empty, each run has a time limit,
-# and EARLBEAR_CONFIG_DIR points at a scratch folder holding an empty settings file. So no command
-# reads real credentials, and none can write the real settings file (the old set-up wizard ran,
-# and touched it, on --help).
+# EARLBEAR_CONFIG_DIR points at a scratch folder holding an empty settings file, and a stand-in
+# `security` that finds nothing is first on PATH. So no command reads real credentials (agent-cli
+# reads the Keychain before it looks at --help), and none can write the real settings file (the
+# old set-up wizard ran, and touched it, on --help).
 #
 # Nothing passes by checking nothing: no formulas found fails, a formula that is not installed
 # fails, and a formula that installs no command is listed by name.
@@ -43,8 +44,14 @@ PASS=0; FAIL=0; UNCHECKED=0; NOCMD=0
 
 work="$(mktemp -d "${TMPDIR:-/tmp}/smoke-test.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
-mkdir -p "$work/config"
+mkdir -p "$work/config" "$work/bin"
 : > "$work/config/.env"
+# A stand-in macOS `security` that never finds anything, put first on PATH for every run, so no
+# command can read a real Keychain entry or pop up a Keychain access prompt nobody will answer.
+printf '%s\n' '#!/bin/sh' \
+    'echo "security: The specified item could not be found in the keychain." >&2' \
+    'exit 44' > "$work/bin/security"
+chmod +x "$work/bin/security"
 
 ok()   { echo -e "  ${GREEN}✓${NC} $*"; PASS=$((PASS + 1)); }
 bad()  { echo -e "  ${RED}✗${NC} $*"; FAIL=$((FAIL + 1)); }
@@ -65,13 +72,28 @@ docker_running() {
     [ "$docker_state" = up ]
 }
 
-# Run one command with empty stdin, the scratch settings folder and a time limit.
-# perl's alarm survives exec, so it also covers wrappers that exec docker.
+# Run one command with empty stdin, the scratch settings folder, the stand-in `security` and a
+# time limit. Exits 142 when the time runs out.
+# A plain alarm is not enough: the Docker wrappers exec the docker CLI, which catches SIGALRM and
+# passes it to the container, where it is ignored. So the command runs in its own process group
+# and, on time-out, the whole group (wrapper, docker CLI, a first-run `docker build`) gets SIGKILL.
+# A container already started may keep running after that; the test still fails and moves on.
 run_one() {
     local out="$1"; shift
     : > "$work/config/.env"   # a fresh, empty settings file for every command
-    EARLBEAR_CONFIG_DIR="$work/config" \
-        perl -e 'alarm shift; exec @ARGV or do { print STDERR "cannot run $ARGV[0]: $!\n"; exit 127 }' "$TIMEOUT" "$@" \
+    EARLBEAR_CONFIG_DIR="$work/config" PATH="$work/bin:$PATH" \
+        perl -e '
+            my $t = shift;
+            my $pid = fork() // die "fork: $!\n";
+            if ($pid == 0) {
+                setpgrp(0, 0);
+                exec @ARGV or do { print STDERR "cannot run $ARGV[0]: $!\n"; exit 127 };
+            }
+            $SIG{ALRM} = sub { kill "KILL", -$pid; waitpid $pid, 0; exit 142 };
+            alarm $t;
+            waitpid $pid, 0;
+            exit(($? & 127) ? 128 + ($? & 127) : $? >> 8);
+        ' "$TIMEOUT" "$@" \
         </dev/null >"$out" 2>"$out.err"
 }
 
@@ -81,7 +103,9 @@ echo "  prefix:   ${PREFIX:-<not found>}"
 echo "────────────────────────"
 
 if [ -z "$PREFIX" ] || [ ! -d "$PREFIX" ]; then
+    # Stop here: every formula would otherwise be reported "not installed", burying the cause.
     bad "Homebrew prefix not found (is brew on PATH? or set SMOKE_PREFIX)"
+    exit 1
 fi
 
 shopt -s nullglob
@@ -98,8 +122,8 @@ for rb in "${formulas[@]+"${formulas[@]}"}"; do
         bad "$formula: formula not installed ($keg is missing)"
         continue
     fi
-    needs_docker=0
-    grep -q '^[[:space:]]*depends_on "docker"' "$rb" && needs_docker=1
+    formula_docker=0
+    grep -q '^[[:space:]]*depends_on "docker"' "$rb" && formula_docker=1
 
     found=0
     for cmd in "$keg"/bin/*; do
@@ -111,10 +135,19 @@ for rb in "${formulas[@]+"${formulas[@]}"}"; do
             bad "$name ($formula): installed but not linked at $linked"
             continue
         fi
+        # A command needs Docker only if its formula says so AND the command itself runs docker
+        # (the wrappers do). ebdeck's formula lists Docker, but its --help is plain Python, so its
+        # failures must never be put down to Docker being off.
+        needs_docker=0
+        if [ "$formula_docker" -eq 1 ] && grep -qI 'docker' "$cmd" 2>/dev/null; then
+            needs_docker=1
+        fi
         out="$work/$name.out"
-        run_one "$out" "$linked" --help 2>/dev/null   # hides the shell's "Alarm clock" line
+        run_one "$out" "$linked" --help
         rc=$?
-        if [ "$rc" -eq 0 ] && grep -qF -- "$name" "$out"; then
+        # The name must appear as a whole word: a renamed `shop` whose help still says `ebshop`
+        # must fail, so a plain substring search is not enough.
+        if [ "$rc" -eq 0 ] && grep -qw -- "$name" "$out"; then
             ok "$name --help ($formula)"
         elif [ "$needs_docker" -eq 1 ] && ! docker_running; then
             if [ "$NO_DOCKER_OK" = "1" ]; then
@@ -142,10 +175,14 @@ done
 # already failed its formula).
 if [ -x "$PREFIX/bin/ebtranscripts" ]; then
     out="$work/ebtranscripts-self-test.out"
-    if run_one "$out" "$PREFIX/bin/ebtranscripts" sanitize --self-test; then
+    run_one "$out" "$PREFIX/bin/ebtranscripts" sanitize --self-test
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
         ok "ebtranscripts sanitize --self-test"
+    elif [ "$rc" -eq 142 ]; then
+        bad "ebtranscripts sanitize --self-test: no answer after ${TIMEOUT}s"
     else
-        bad "ebtranscripts sanitize --self-test: exit $?"
+        bad "ebtranscripts sanitize --self-test: exit $rc"
         why "$out.err"
     fi
 fi
