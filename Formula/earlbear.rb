@@ -5,8 +5,6 @@ class Earlbear < Formula
   sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
   license "MIT"
 
-  depends_on "git-lfs"
-  depends_on "gh"
   depends_on "earlbear/tap/agent-cli"
   depends_on "earlbear/tap/earlbear-plugins"
   depends_on "earlbear/tap/ebdeck"
@@ -14,6 +12,8 @@ class Earlbear < Formula
   depends_on "earlbear/tap/ebjira"
   depends_on "earlbear/tap/ebshop"
   depends_on "earlbear/tap/ebtranscripts"
+  depends_on "gh"
+  depends_on "git-lfs"
 
   def install
     bin.install "scripts/setup-env.sh" => "earlbear-setup"

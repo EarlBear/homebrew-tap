@@ -13,9 +13,12 @@ Sync the latest CLI source from sibling repos into `src/` and run a quick audit.
 ### 1. Check sibling repos exist
 
 ```bash
-ls ../earlbear-clis/jira-cli/ ../earlbear-clis/deck-cli/ ../earlbear/bin/agent-cli \
-   ../earlbear-claude-plugin-marketplace/plugins/
+ls ../earlbear-clis/jira-cli/ ../earlbear-clis/deck-cli/ ../earlbear/bin/agent-cli
 ```
+
+The Claude plugins are not synced here; the `earlbear-plugins` formula installs them from the
+GitHub marketplace, and `scripts/install-plugins.sh` reads the plugin names from the
+marketplace's `.claude-plugin/marketplace.json`, so nothing here changes when a plugin is added.
 
 If any are missing, report which ones and ask the user to check `EARLBEAR_ROOT` in the Makefile.
 
@@ -28,7 +31,7 @@ make sync-sources
 ### 3. Report what changed
 
 ```bash
-git diff --stat src/ plugins-bundle/
+git diff --stat src/
 ```
 
 Summarize which CLIs changed (lines added/removed per directory). If nothing changed, say so.

@@ -13,12 +13,14 @@ class Ebjira < Formula
     bin.install_symlink libexec/"ebjira/wrapper.sh" => "ebjira"
   end
 
-  def post_install
-    if which("docker")
-      system "docker", "build", "-t", "ebjira", "-q", libexec/"ebjira"
-    else
-      opoo "docker not found - run `docker build -t ebjira #{libexec}/ebjira` after installing Docker"
-    end
+  # No post_install: Homebrew runs it in a sandbox that cannot reach Docker, so
+  # the wrapper builds the image itself on first run.
+  def caveats
+    <<~EOS
+      The first ebjira command builds its Docker image (Docker must be running).
+      After an upgrade, rebuild the image so it picks up the new version:
+        docker build -t ebjira #{opt_libexec}/ebjira
+    EOS
   end
 
   test do

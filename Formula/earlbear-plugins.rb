@@ -1,23 +1,29 @@
 class EarlbearPlugins < Formula
-  desc "EarlBear Claude plugin marketplace - installs all earlbear Claude skills"
+  desc "EarlBear Claude plugins, installed from the EarlBear GitHub marketplace"
   homepage "https://github.com/EarlBear/homebrew-tap"
   url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.1.0.tar.gz"
   sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
   license "MIT"
 
+  # The plugins are not copied into this formula. install-plugins.sh adds the
+  # private GitHub marketplace EarlBear/marketplace-claude-plugins and installs
+  # the plugins from it, so they are always the current ones.
   def install
     libexec.install "scripts/install-plugins.sh"
-    (libexec/"marketplace").install Dir["plugins-bundle/*"]
-    (libexec/"marketplace/.claude-plugin").install Dir["plugins-bundle/.claude-plugin/*"]
   end
 
-  def post_install
-    if which("claude")
-      system "bash", libexec/"install-plugins.sh", libexec/"marketplace"
-    else
-      opoo "claude CLI not found. After installing Claude Code, run:\n  " \
-           "bash #{libexec}/install-plugins.sh #{libexec}/marketplace"
-    end
+  # No post_install: Homebrew runs it in a sandbox that cannot read or write
+  # ~/.claude or use your GitHub keys, so the plugins cannot be installed from
+  # it. The caveats tell you to run the script yourself.
+  def caveats
+    <<~EOS
+      This installs the plugin installer, not the plugins. To install the plugins
+      (and later, to update them), run:
+        bash #{opt_libexec}/install-plugins.sh
+      It needs Claude Code (the claude command) and GitHub access to the private
+      repo EarlBear/marketplace-claude-plugins: an SSH key for github.com, or
+      HTTPS through gh (gh auth login, then gh auth setup-git).
+    EOS
   end
 
   test do

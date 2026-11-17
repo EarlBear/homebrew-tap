@@ -97,7 +97,7 @@ full setup cost on every iteration:
 | 5 (cowork devcontainer) | Devcontainer image | `SKIP_BUILD=1` reuses existing `earlbear-cowork-test:local` |
 | 5c (cowork-sim) | Linuxbrew base image | `make cowork-sim-build-base` → `earlbear-cowork-base:local` |
 | 5c (cowork-sim) | Sim image (brew install) | `SKIP_BREW=1` reuses existing `earlbear-cowork-sim:local` |
-| 5b (plugin binaries) | Compiled binaries | `SKIP_BUILD=1` reuses binaries in `plugins-bundle/*/bin/` |
+| 5b (plugin binaries) | Compiled binaries | `SKIP_BUILD=1` reuses binaries in `cowork-payload/*/bin/` |
 
 **Tart VM caching rationale:**  
 `tart clone` is fast (~5s) but the Homebrew install step inside the VM takes ~5min.
@@ -120,10 +120,15 @@ GitHub tag. This is implemented by:
 
 1. Copying the repo into the test environment (Docker COPY, rsync over SSH)
 2. `git init` the copy (brew tap requires git history)
-3. Building a local tarball: `tar -czf tap-v1.0.0.tar.gz ...`
+3. Reading the release tag from the formulas' `url` lines and building a local tarball named
+   after it: `tar -czf tap-<tag>.tar.gz ...`. The tag must stay in the file name, because
+   Homebrew reads a formula's version from its download's file name; `tap-local.tar.gz`
+   fails with "invalid attribute for formula ...: version (nil)".
 4. Computing `sha256sum` of the tarball
 5. Patching each `Formula/*.rb`:
-   - Replace GitHub URL with `file:///path/to/tap-v1.0.0.tar.gz`
+   - Replace the GitHub URL, whatever release tag it names (`v[0-9][0-9.]*`), with
+     `file:///path/to/tap-<tag>.tar.gz`. Nothing names a version by hand, so a release needs
+     no test edits.
    - Replace formula-level `sha256` with computed hash
    - **Do NOT** touch resource sha256s (PyPI package hashes)
 6. `git commit` the patched formulas

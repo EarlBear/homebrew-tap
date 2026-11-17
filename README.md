@@ -55,7 +55,7 @@ brew install earlbear/tap/ebdeck
 |---|---|---|
 | `ebdeck` | ✓ validated | Deck generator (Python + Docker) |
 | `ebjira` | ✓ validated | Jira CLI (Docker-wrapped) |
-| `earlbear-plugins` | ✓ validated | Claude plugin bundle |
+| `earlbear-plugins` | ✓ validated | Installs the Claude plugins from the GitHub marketplace |
 | `ebtranscripts` | ✓ validated | Transcript telemetry (Python venv) |
 | `ebdocs` | in progress | Google Docs CLI |
 | `ebshop` | in progress | Shopify CLI |

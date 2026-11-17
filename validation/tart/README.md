@@ -88,7 +88,8 @@ the script:
 
 1. Builds a tarball from `~/tap-src/` inside the VM
 2. Computes its `sha256sum`
-3. Patches each `Formula/*.rb` to use `file:///Users/admin/tap-v1.0.0.tar.gz` + the new sha256
+3. Patches each `Formula/*.rb` to use `file:///Users/admin/tap-<tag>.tar.gz` (the tag is read from the formulas) + the new sha256
+   (the URL match takes any release tag, so a release needs no edit here)
 4. Commits the patched formulas so `brew tap` is happy
 
 This is identical to what `validation/docker/Dockerfile` does — the same awk

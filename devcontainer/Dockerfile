@@ -37,14 +37,17 @@ RUN cp -r /tmp/tap-src /home/linuxbrew/tap && \
 # Uses the same awk pattern as validation/docker/Dockerfile to only patch
 # the formula-level sha256 (not resource sha256s).
 RUN cd /home/linuxbrew && \
-    tar -czf tap-v1.0.0.tar.gz -C /home/linuxbrew tap && \
-    LOCAL_SHA=$(sha256sum /home/linuxbrew/tap-v1.0.0.tar.gz | awk '{print $1}') && \
+    TAG=$(sed -n 's|.*homebrew-tap/archive/refs/tags/\(v[0-9][0-9.]*[0-9]\)\.tar\.gz.*|\1|p' tap/Formula/*.rb | head -1) && \
+    test -n "$TAG" && \
+    tar -czf "tap-$TAG.tar.gz" -C /home/linuxbrew tap && \
+    LOCAL_URL="file:///home/linuxbrew/tap-$TAG.tar.gz" && \
+    LOCAL_SHA=$(sha256sum "/home/linuxbrew/tap-$TAG.tar.gz" | awk '{print $1}') && \
     for f in /home/linuxbrew/tap/Formula/*.rb; do \
       sed -i \
-        -e "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
+        -e "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v[0-9][0-9.]*\.tar\.gz\"|url \"$LOCAL_URL\"|g" \
         "$f"; \
-      awk -v sha="$LOCAL_SHA" \
-        '/url "file:\/\/\/home\/linuxbrew\/tap-v1\.0\.0\.tar\.gz"/{found=1} \
+      awk -v sha="$LOCAL_SHA" -v url="$LOCAL_URL" \
+        'index($0, url){found=1} \
          found && /^  sha256 "[0-9a-f]{64}"/{sub(/"[0-9a-f]{64}"/, "\"" sha "\""); found=0} \
          {print}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"; \
     done && \
@@ -57,7 +60,7 @@ RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap
 
 # Install non-Docker formulas only (no Docker daemon in cowork container)
 # - ebdeck: Python venv orchestrator (the primary cowork tool)
-# - earlbear-plugins: Claude plugin bundle
+# - earlbear-plugins: installs install-plugins.sh (plugins come from the GitHub marketplace)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source \
     earlbear/tap/ebdeck \
     earlbear/tap/earlbear-plugins

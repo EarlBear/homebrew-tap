@@ -17,7 +17,8 @@ Use when the CLI runs inside a Docker container (ebjira, ebdocs, ebshop pattern)
 
 Structure:
 - `install` block: copies `src/<name>/*` + `wrappers/<name>/wrapper.sh` into `libexec/<name>/`, symlinks wrapper to `bin/<name>`
-- `post_install` block: `docker build -t <name> libexec/<name>` if Docker available, else `opoo`
+- No `post_install`: Homebrew runs it in a sandbox that cannot reach Docker, and `brew audit`
+  rejects it. The wrapper builds the image on first run; `caveats` say how to rebuild after an upgrade.
 - `test` block: assert binary is executable, run a known-failing command and assert `CONFIG_MISSING`
 
 Must create:
@@ -64,12 +65,14 @@ class <ClassName> < Formula
     bin.install_symlink libexec/"<name>/wrapper.sh" => "<name>"
   end
 
-  def post_install
-    if which("docker")
-      system "docker", "build", "-t", "<name>", "-q", libexec/"<name>"
-    else
-      opoo "docker not found - run `docker build -t <name> #{libexec}/<name>` after installing Docker"
-    end
+  # No post_install: Homebrew runs it in a sandbox that cannot reach Docker, so
+  # the wrapper builds the image itself on first run.
+  def caveats
+    <<~EOS
+      The first <name> command builds its Docker image (Docker must be running).
+      After an upgrade, rebuild the image so it picks up the new version:
+        docker build -t <name> #{opt_libexec}/<name>
+    EOS
   end
 
   test do
@@ -153,3 +156,7 @@ end
 - `pip_install_and_link` has no network access in Docker — ALL deps (including hatchling + its deps) must be declared as `resource` blocks
 - `typer >= 0.9` requires `typing-extensions` at import time — add it as a resource even if not in `dependencies` (it's in `requires-python`)
 - Formula `url` and `sha256` must match the actual GitHub release tarball
+- Homebrew has pip build every resource from source (`--no-binary=:all:`), build tools included.
+  If any package builds with maturin (check its `[build-system]`: pydantic-core does, and so does
+  `uv_build`, the backend claude-code-transcripts uses), add `depends_on "rust" => :build`.
+  A resource block does not help here: pip fetches build tools from PyPI, not from the resources.
