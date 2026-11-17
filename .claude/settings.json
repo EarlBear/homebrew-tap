@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "MARKER=/tmp/earlbear-plugins-checked-${PPID}; [ -f \"$MARKER\" ] && exit 0; touch \"$MARKER\"; bash /Users/omareid/Workspace/git-earlbear/earlbear-claude-plugin-marketplace/scripts/check-plugins.sh living-artifacts-manager"
+            "command": "MARKER=/tmp/plugins-checked-${PPID}; OLD_MARKER=/tmp/earlbear-plugins-checked-${PPID}; { [ -f \"$MARKER\" ] || [ -f \"$OLD_MARKER\" ]; } && exit 0; touch \"$MARKER\"; bash /Users/omareid/Workspace/git-earlbear/earlbear-claude-plugin-marketplace/scripts/check-plugins.sh living-artifacts-manager"
           }
         ]
       }
