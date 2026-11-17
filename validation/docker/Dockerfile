@@ -49,8 +49,10 @@ RUN cd /home/linuxbrew && \
 # (seen 2026-11-16: "Unexpected method 'postflight_steps' called on Cask docker-desktop").
 RUN brew update
 
-# Tap locally (brew tap requires a git repo)
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap
+# Tap locally (brew tap requires a git repo). Homebrew 7 refuses to load formulas from a
+# tap nobody has trusted, and `brew install earlbear` loads its tap dependencies, so trust it.
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap && \
+    brew trust earlbear/tap
 
 # Install ebdeck (Python venv formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebdeck

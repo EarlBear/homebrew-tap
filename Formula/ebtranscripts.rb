@@ -7,6 +7,9 @@ class Ebtranscripts < Formula
   sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
   license "MIT"
 
+  # pip builds every resource from source. pydantic-core and the uv_build backend that
+  # claude-code-transcripts needs are Rust, built with maturin, so the build needs Rust.
+  depends_on "rust" => :build
   depends_on "libyaml"
   depends_on "python@3.11"
 
