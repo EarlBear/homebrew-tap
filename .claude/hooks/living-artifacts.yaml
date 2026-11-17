@@ -127,7 +127,7 @@ triggers:
   - when_changed: "validation/cowork/**"
     remind:
       - "Run `make validate-cowork` to verify the test script still passes (Apple Silicon + macOS 26+ required)."
-      - "Smoke test exit code 2 (CONFIG_MISSING) is a pass — same convention as validation/smoke/smoke-test.sh. Keep this consistent."
+      - "Here exit code 2 (CONFIG_MISSING) counts as a pass. The Tier 4 smoke test (validation/smoke/smoke-test.sh) no longer does: it runs --help and needs exit 0 and the command's own name, because a usage error exits 2 too."
 
   # --- Cowork simulation ---
   - when_changed: "validation/cowork-sim/**"

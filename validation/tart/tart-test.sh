@@ -259,9 +259,12 @@ echo -e "${GREEN}    Install complete${NC}"
 echo -e "${BLUE}==> Running smoke tests in VM...${NC}"
 echo ""
 
-# Add brew to PATH for the smoke test session
+# Add brew to PATH for the smoke test session. The script arrives through a pipe, so it can't
+# find Formula/ beside itself: point it at the tap copied in step 4. The VM has no Docker, so the
+# Docker-wrapped commands are listed as not checked rather than failing.
 {
     echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+    echo 'export SMOKE_FORMULA_DIR="$HOME/tap-src/Formula" SMOKE_NO_DOCKER_OK=1'
     cat "$REPO_ROOT/validation/smoke/smoke-test.sh"
 } | ssh_script
 

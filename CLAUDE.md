@@ -57,7 +57,7 @@ make sync-sources
 # 3. Validate
 make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
-make validate-smoke    # Tier 4: smoke test local install (~10s)
+make validate-smoke    # Tier 4: every installed command answers --help with its own name (~1min; longer on first run while Docker images build)
 make validate-vm       # Tier 3: Tart macOS VM — clean-room from local source (~15min, ~10min with snapshot)
                        #   prereqs (one-time): brew install cirruslabs/cli/tart
                        #                       brew install hudochenkov/sshpass/sshpass
@@ -92,7 +92,7 @@ make release-plugin-wheels          # upload wheels to an existing tag's release
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
 | 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
-| 4 | `make validate-smoke` | ~10s | Binaries callable, exit codes correct |
+| 4 | `make validate-smoke` | ~1min (first run longer: Docker images build) | Every command each formula installs answers `--help` with exit 0 and its own name (no settings, no Keychain) |
 | 5 | `make validate-cowork` | ~10min | Cowork devcontainer: install paths, runtime env (Apple Silicon + macOS 26+) |
 | 5b | `make validate-plugin-wheels` | ~5min (SKIP_BUILD=1: ~1min) | Build pure-Python wheel bundles for all 4 CLIs → pip-install in ubuntu:24.04 ARM64 → assert `--help` exits cleanly. Single CLI: `CLI=ebjira make validate-plugin-wheels`. (Apple Silicon + Docker + apple/container) |
 | 5c | `make validate-cowork-sim` | ~10min (SKIP_BREW=1: ~3min) | Fresh ubuntu:24.04 + linuxbrew install + tap earlbear + brew install ebdeck → mount plugin dirs → run cowork shims → assert exits 2 (CONFIG_MISSING). Closest automated simulation of cowork plugin delivery. (Apple Silicon + apple/container) |

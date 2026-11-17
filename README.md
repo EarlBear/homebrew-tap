@@ -120,7 +120,7 @@ make sync-sources
 # Run validation suite
 make validate-audit    # ~30s  — brew audit/style in Docker
 make validate-docker   # ~5min — brew install in Docker (Linux x86_64)
-make validate-smoke    # ~10s  — smoke test local installs
+make validate-smoke    # ~1min — every installed command answers --help with its own name
 make validate-cowork   # ~10min — cowork devcontainer (Apple Silicon + macOS 26+)
 
 # Release
