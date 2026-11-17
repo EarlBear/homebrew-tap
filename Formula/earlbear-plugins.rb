@@ -12,21 +12,17 @@ class EarlbearPlugins < Formula
     libexec.install "scripts/install-plugins.sh"
   end
 
-  def post_install
-    if which("claude")
-      system "bash", libexec/"install-plugins.sh"
-    else
-      opoo "claude CLI not found. After installing Claude Code, run:\n  " \
-           "bash #{opt_libexec}/install-plugins.sh"
-    end
-  end
-
+  # No post_install: Homebrew runs it in a sandbox that cannot read or write
+  # ~/.claude or use your GitHub keys, so the plugins cannot be installed from
+  # it. The caveats tell you to run the script yourself.
   def caveats
     <<~EOS
-      The plugins come from the private GitHub repo EarlBear/marketplace-claude-plugins,
-      so this Mac needs GitHub access to EarlBear (an SSH key for github.com).
-      To install or update them again later, run:
+      This installs the plugin installer, not the plugins. To install the plugins
+      (and later, to update them), run:
         bash #{opt_libexec}/install-plugins.sh
+      It needs Claude Code (the claude command) and GitHub access to the private
+      repo EarlBear/marketplace-claude-plugins: an SSH key for github.com, or
+      HTTPS through gh (gh auth login, then gh auth setup-git).
     EOS
   end
 

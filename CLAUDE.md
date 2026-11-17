@@ -167,8 +167,10 @@ Migrate to 1Password CLI (Option A) when team grows to ≥2 developers.
 
 The Claude plugins are **not** copied here. The `earlbear-plugins` formula installs only
 `scripts/install-plugins.sh`, which adds the private GitHub marketplace
-`EarlBear/marketplace-claude-plugins` and installs the plugins from it. When the marketplace
-adds or removes a plugin, update the list in that script.
+`EarlBear/marketplace-claude-plugins` and installs every plugin its
+`.claude-plugin/marketplace.json` lists, so the script needs no edit when a plugin is added or
+removed. The formula has no post_install (Homebrew's sandbox blocks `~/.claude` and GitHub keys
+there), so a person runs the script after `brew install`, as the caveats say.
 
 `cowork-payload/<plugin>/` holds what the Claude Desktop cowork VM needs and the marketplace
 does not ship: the `bin/<cli>` shims, the old `*-linux` builds, and the

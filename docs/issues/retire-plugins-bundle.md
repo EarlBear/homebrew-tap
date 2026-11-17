@@ -28,7 +28,15 @@ installs the plugins from the real marketplace instead of from a copy kept here.
   no plugins, it stops with an error (exit 1); if some plugins fail, it says which (exit 2).
   If the old Homebrew copy (or a folder that no longer exists) is registered under that name, it
   removes it first. A developer's own checkout registered under the name is left alone.
-- The formula installs only that script; post_install runs it with no arguments.
+- The formula installs only that script, and a person runs it after `brew install` (the
+  caveats say how). It has no post_install: Homebrew 7 runs post_install in a macOS sandbox
+  that denies reading `~/.claude`, `~/.claude.json`, `~/.ssh`, `~/.gitconfig` and
+  `~/.config/gh`, and denies writing outside Homebrew's own folders and temp
+  (`Library/Homebrew/sandbox.rb`, `add_install_hook_rules`). So `claude plugin install` could
+  never work from there. The newer `post_install_steps` runs in the same sandbox, so switching
+  to it would not help. The same goes for the `docker build` in ebjira, ebdocs and ebshop
+  (the Docker socket and `~/.docker` are blocked); their wrappers already build the image on
+  first run. This comes from reading Homebrew's source, not from a run on a Mac.
 - The parts the Claude Desktop cowork VM needs and the marketplace does not ship (the `bin/<cli>`
   shims, the old `*-linux` builds and the `wheels/<cli>-bundle.zip` files) moved to
   `cowork-payload/<plugin>/`. The copied skills, READMEs and plugin.json files were deleted.

@@ -58,21 +58,21 @@ RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebdeck
 # Install ebtranscripts (Python venv formula — no Docker required)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebtranscripts
 
-# Install earlbear-plugins (shell script formula — no Docker required)
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/earlbear-plugins || true
+# Install earlbear-plugins (shell script formula — installs the plugin installer only)
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/earlbear-plugins && \
+    test -x "$(brew --prefix earlbear-plugins)/libexec/install-plugins.sh" && \
+    echo "✓ earlbear-plugins installer present"
 
-# Install Docker-wrapped formula wrappers (post_install Docker build will be skipped — no daemon)
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebjira 2>&1; \
-    test -f "$(brew --prefix)/bin/ebjira" && echo "✓ ebjira wrapper installed" || \
-    echo "INFO ebjira post_install skipped (no Docker daemon in container — expected)"
+# Install the Docker-wrapped formulas. They have no post_install: the wrapper
+# builds its Docker image on first run, so no Docker daemon is needed here.
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebjira 2>&1 && \
+    test -x "$(brew --prefix)/bin/ebjira" && echo "✓ ebjira wrapper installed"
 
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebdocs 2>&1; \
-    test -f "$(brew --prefix)/bin/ebdocs" && echo "✓ ebdocs wrapper installed" || \
-    echo "INFO ebdocs post_install skipped (no Docker daemon in container — expected)"
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebdocs 2>&1 && \
+    test -x "$(brew --prefix)/bin/ebdocs" && echo "✓ ebdocs wrapper installed"
 
-RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebshop 2>&1; \
-    test -f "$(brew --prefix)/bin/ebshop" && echo "✓ ebshop wrapper installed" || \
-    echo "INFO ebshop post_install skipped (no Docker daemon in container — expected)"
+RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/ebshop 2>&1 && \
+    test -x "$(brew --prefix)/bin/ebshop" && echo "✓ ebshop wrapper installed"
 
 # Install agent-cli (shell script, depends on ebjira)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew install earlbear/tap/agent-cli 2>&1 && \

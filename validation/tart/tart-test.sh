@@ -242,14 +242,12 @@ git commit -q -m "patch local urls"
 # Tap from local git repo
 brew tap earlbear/tap ~/tap-src
 
-# Install earlbear meta-formula.
-# Docker-wrapped formulas (ebjira, ebdocs, ebshop) will log a post_install warning
-# ("failed to connect to Docker daemon") — this is expected; no Docker daemon in VM.
-# brew exits non-zero when post_install fails, so we assert the binaries are present
-# rather than relying on exit code.
+# Install earlbear meta-formula. No formula has a post_install any more (the
+# Docker wrappers build their image on first run), but we still assert the
+# binaries are present rather than trusting the exit code alone.
 brew install earlbear/tap/earlbear || true
 
-# Assert key binaries landed regardless of Docker post_install exit code
+# Assert key binaries landed
 for bin in ebdeck ebjira ebdocs ebshop agent-cli earlbear-setup; do
     test -x "$(brew --prefix)/bin/$bin" || \
         { echo "ERROR: $bin not found at $(brew --prefix)/bin/$bin" >&2; exit 1; }

@@ -76,9 +76,9 @@ triggers:
   # --- Plugin installer ---
   - when_changed: "scripts/install-plugins.sh"
     remind:
-      - "The plugin list in this script must match `.claude-plugin/marketplace.json` on main in EarlBear/marketplace-claude-plugins. Plugins removed there should be removed here."
-      - "Never test it against your own Claude setup. Point it at a throwaway config: `CLAUDE_CONFIG_DIR=<scratch dir> bash scripts/install-plugins.sh`."
-      - "The formula picks the new script up only at the next release (its url points at a tag). Run `make validate-docker` to check install + post_install."
+      - "The script reads the plugin names from the marketplace's `.claude-plugin/marketplace.json`; do not add a fixed list back. It exits 1 when the marketplace cannot be added or read and 2 when some plugins fail."
+      - "Never test it against your own Claude setup. Point it at a throwaway config: `CLAUDE_CONFIG_DIR=<scratch dir> /bin/bash scripts/install-plugins.sh` (macOS bash 3.2: no mapfile)."
+      - "The formula picks the new script up only at the next release (its url points at a tag). The formula has no post_install, because Homebrew's sandbox blocks ~/.claude and GitHub keys there."
 
   # --- Cowork payload (shims, Linux builds, wheel bundles) ---
   - when_changed: "cowork-payload/**/bin/*"
