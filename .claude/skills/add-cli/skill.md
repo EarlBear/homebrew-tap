@@ -215,21 +215,16 @@ make validate-plugin-binaries
 ## Step 8 — Add the cowork payload and the plugin, then commit
 
 The plugin itself (plugin.json, skills, shim) lives only in the marketplace repo; this tap
-does not copy it. Two things land here:
-
-1. **The plugin name in the installer.** Add `<plugin-name>` to the `PLUGINS` list in
-   `scripts/install-plugins.sh`, in the same order as the marketplace's
-   `.claude-plugin/marketplace.json`.
-2. **The cowork payload.** Copy the shim to `cowork-payload/<plugin-name>/bin/<cli>`
-   (chmod +x). The wheel bundle from Step 6 is already at
-   `cowork-payload/<plugin-name>/wheels/<cli>-bundle.zip`.
+does not copy it. `scripts/install-plugins.sh` reads the plugin names from the marketplace's
+`.claude-plugin/marketplace.json`, so it needs no edit. What lands here is the cowork payload:
+copy the shim to `cowork-payload/<plugin-name>/bin/<cli>` (chmod +x). The wheel bundle from
+Step 6 is already at `cowork-payload/<plugin-name>/wheels/<cli>-bundle.zip`.
 
 ```bash
 make sync-sources   # refreshes src/ only
 git add src/<cli>/
 git add Formula/<cli>.rb
 git add Makefile
-git add scripts/install-plugins.sh
 git add validation/docker/Dockerfile
 git add validation/plugin-binaries/test.sh
 git add cowork-payload/<plugin-name>/bin/<cli>
@@ -292,6 +287,5 @@ Whenever you add a new CLI, these files become stale and should be updated:
 | `validation/docker/Dockerfile` | New `brew install` + smoke test line |
 | `validation/plugin-binaries/test.sh` | New CLI in the test loop |
 | `cowork-payload/<plugin-name>/` | Cowork shim + wheel bundle (the plugin itself stays in the marketplace repo) |
-| `scripts/install-plugins.sh` | New plugin in the `PLUGINS` list |
 | `README.md` | Formula status table |
 | `CLAUDE.md` | Source sync table + Formulas table |

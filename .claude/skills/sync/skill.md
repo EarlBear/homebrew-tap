@@ -17,8 +17,8 @@ ls ../earlbear-clis/jira-cli/ ../earlbear-clis/deck-cli/ ../earlbear/bin/agent-c
 ```
 
 The Claude plugins are not synced here; the `earlbear-plugins` formula installs them from the
-GitHub marketplace. If the marketplace added or removed a plugin, update the `PLUGINS` list in
-`scripts/install-plugins.sh` to match its `.claude-plugin/marketplace.json`.
+GitHub marketplace, and `scripts/install-plugins.sh` reads the plugin names from the
+marketplace's `.claude-plugin/marketplace.json`, so nothing here changes when a plugin is added.
 
 If any are missing, report which ones and ask the user to check `EARLBEAR_ROOT` in the Makefile.
 
