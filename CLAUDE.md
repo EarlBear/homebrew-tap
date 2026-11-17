@@ -21,7 +21,7 @@ EarlBear Homebrew tap — Mac installer for all EarlBear CLI tooling.
 | `ebshop` | Docker image + wrapper | Requires Docker for Mac |
 | `ebdeck` | Python venv (`Language::Python::Virtualenv`) | `python@3.11` dep |
 | `agent-cli` | Bash script | Depends on `ebjira` formula |
-| `earlbear-plugins` | Shell script | Requires `claude` CLI on PATH |
+| `earlbear-plugins` | Shell script | Installs the plugins from the GitHub marketplace; needs `claude` on PATH and GitHub access to EarlBear |
 | `earlbear` | Meta (all deps) | One-liner setup entry point |
 
 ## Casks
@@ -71,7 +71,7 @@ make validate-cowork-sim   # Tier 5c: fresh brew + plugin shims in ubuntu:24.04 
 # 4. Build cowork plugin wheels (pure-Python — no cross-compilation, no GLIBC issues)
 make build-plugin-wheels            # all CLIs (~2min, requires Docker for clean build env)
 make build-plugin-ebjira            # single CLI wheel bundle
-# Output: plugins-bundle/<plugin>/wheels/<cli>-bundle.zip
+# Output: cowork-payload/<plugin>/wheels/<cli>-bundle.zip
 
 # 5. Validate plugin wheels run in the cowork VM environment
 make validate-plugin-wheels         # build wheels + run in ubuntu:24.04 ARM64 (~5min)
@@ -81,8 +81,8 @@ SKIP_BUILD=1 make validate-plugin-wheels  # re-run against existing wheels (~1mi
 make bump-and-release VERSION=1.0.1
 make release-plugin-wheels          # upload wheels to an existing tag's release
 
-# Wheel bundles (<cli>-bundle.zip) are committed to git alongside the plugin shims.
-# No Git LFS needed — wheels are small (~5MB total for all CLIs including deps).
+# Wheel bundles (<cli>-bundle.zip) are committed next to the cowork shims, in Git LFS
+# (see .gitattributes). Some are tens of MB with their dependencies.
 ```
 
 ## Validation tiers
@@ -114,8 +114,9 @@ Five skills cover the common tap operations. Invoke with `/skill-name`.
 
 ### No large files in git objects
 
-Compiled binaries (`plugins-bundle/**/bin/*-linux`) are stored in **Git LFS**,
-tracked via `.gitattributes`. Never commit raw binaries to git objects.
+Wheel bundles (`cowork-payload/**/wheels/*-bundle.zip`) and the old compiled
+binaries (`cowork-payload/**/bin/*-linux`) are stored in **Git LFS**. The wheel
+rule is in `.gitattributes`. Never commit raw binaries to git objects.
 
 - Verify before staging: `git lfs status` — LFS-tracked files show `(LFS: ...)`, not raw size.
 - New binary file types must be added to `.gitattributes` before first commit.
@@ -163,7 +164,16 @@ Migrate to 1Password CLI (Option A) when team grows to ≥2 developers.
 - `src/ebshop/` ← `../earlbear-clis/shopify-cli/`
 - `src/ebdeck/` ← `../earlbear-clis/deck-cli/`
 - `src/agent-cli/` ← `../earlbear/bin/agent-cli`
-- `plugins-bundle/` ← `../earlbear-claude-plugin-marketplace/plugins/`
+
+The Claude plugins are **not** copied here. The `earlbear-plugins` formula installs only
+`scripts/install-plugins.sh`, which adds the private GitHub marketplace
+`EarlBear/marketplace-claude-plugins` and installs the plugins from it. When the marketplace
+adds or removes a plugin, update the list in that script.
+
+`cowork-payload/<plugin>/` holds what the Claude Desktop cowork VM needs and the marketplace
+does not ship: the `bin/<cli>` shims, the old `*-linux` builds, and the
+`wheels/<cli>-bundle.zip` files that `make build-plugin-wheels` writes. It is not a Claude
+plugin folder (there is no `plugin.json`); the plugins themselves come from the marketplace.
 
 Do not hand-edit files in `src/` — edit source in the respective repos and re-sync.
 

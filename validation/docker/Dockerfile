@@ -20,16 +20,22 @@ RUN cd /home/linuxbrew/tap && \
     git commit -m "tap snapshot"
 
 # Build local archive for use as formula url, compute sha256, patch formulas
-# Replaces both the GitHub URL and the sha256 (whether placeholder zeros or real hash)
+# Replaces both the GitHub URL and the sha256 (whether placeholder zeros or real hash).
+# The tag is read from the formulas and the URL match takes any tag (vX.Y.Z), so a new
+# release needs no edit here. The tarball keeps the tag in its name because Homebrew
+# reads the formula version from the file name.
 RUN cd /home/linuxbrew && \
-    tar -czf tap-v1.0.0.tar.gz -C /home/linuxbrew tap && \
-    LOCAL_SHA=$(sha256sum /home/linuxbrew/tap-v1.0.0.tar.gz | awk '{print $1}') && \
+    TAG=$(sed -n 's|.*homebrew-tap/archive/refs/tags/\(v[0-9][0-9.]*[0-9]\)\.tar\.gz.*|\1|p' tap/Formula/*.rb | head -1) && \
+    test -n "$TAG" && echo "Formulas point at tag $TAG" && \
+    tar -czf "tap-$TAG.tar.gz" -C /home/linuxbrew tap && \
+    LOCAL_URL="file:///home/linuxbrew/tap-$TAG.tar.gz" && \
+    LOCAL_SHA=$(sha256sum "/home/linuxbrew/tap-$TAG.tar.gz" | awk '{print $1}') && \
     for f in /home/linuxbrew/tap/Formula/*.rb; do \
       sed -i \
-        -e "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///home/linuxbrew/tap-v1.0.0.tar.gz\"|g" \
+        -e "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v[0-9][0-9.]*\.tar\.gz\"|url \"$LOCAL_URL\"|g" \
         "$f"; \
-      awk -v sha="$LOCAL_SHA" \
-        '/url "file:\/\/\/home\/linuxbrew\/tap-v1\.0\.0\.tar\.gz"/{found=1} \
+      awk -v sha="$LOCAL_SHA" -v url="$LOCAL_URL" \
+        'index($0, url){found=1} \
          found && /^  sha256 "[0-9a-f]{64}"/{sub(/"[0-9a-f]{64}"/, "\"" sha "\""); found=0} \
          {print}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"; \
     done && \
@@ -37,6 +43,11 @@ RUN cd /home/linuxbrew && \
     git add Formula/ && \
     git commit -m "patch local urls" && \
     echo "Patched formulas with local URL sha256=$LOCAL_SHA"
+
+# Bring Homebrew itself up to date once. The image's Homebrew can be older than the
+# formula and bottle data it downloads, and then installs fail on code it does not know
+# (seen 2026-11-16: "Unexpected method 'postflight_steps' called on Cask docker-desktop").
+RUN brew update
 
 # Tap locally (brew tap requires a git repo)
 RUN HOMEBREW_NO_AUTO_UPDATE=1 brew tap earlbear/tap /home/linuxbrew/tap

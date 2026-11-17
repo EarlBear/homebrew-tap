@@ -49,7 +49,7 @@ Use this output to decide:
 
 ```bash
 make sync-sources
-git diff src/ plugins-bundle/   # review what changed
+git diff src/   # review what changed
 ```
 
 If nothing changed in `src/`, confirm with user — the source repos may not have been updated.

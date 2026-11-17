@@ -40,7 +40,9 @@ There is no `mcp__cowork__exec` or shell access from outside. To run a command i
 Prerequisites:
 - Claude Desktop installed and running
 - Plugin repo cloned with `git lfs pull` (so binaries are present)
-- Plugin installed in Claude Desktop: **Settings → Plugins → + Add → [path to plugins-bundle/jira-manager]**
+- jira-manager installed in Claude Desktop from the EarlBear marketplace
+  (GitHub repo `EarlBear/marketplace-claude-plugins`). This tap no longer keeps a loadable
+  copy of the plugin; its cowork shim and Linux builds are in `cowork-payload/jira-manager/`.
 
 ### Step 1 — Open a cowork session
 

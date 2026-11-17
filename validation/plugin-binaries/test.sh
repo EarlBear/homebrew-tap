@@ -96,7 +96,7 @@ fi
 
 for cli in "${CLIS_TO_TEST[@]}"; do
     plugin="${CLI_PLUGINS[$cli]}"
-    binary="$REPO_ROOT/plugins-bundle/$plugin/bin/${cli}-aarch64-linux"
+    binary="$REPO_ROOT/cowork-payload/$plugin/bin/${cli}-aarch64-linux"
     if [[ ! -f "$binary" ]]; then
         echo -e "${RED}Binary not found: $binary${NC}"
         echo "Run without SKIP_BUILD=1 to compile it, or run 'make build-plugin-${cli} SKIP_AMD=1'."
@@ -116,7 +116,7 @@ declare -A MOUNTED_DIRS
 VOLUME_ARGS=()
 for cli in "${CLIS_TO_TEST[@]}"; do
     plugin="${CLI_PLUGINS[$cli]}"
-    bin_dir="$REPO_ROOT/plugins-bundle/$plugin/bin"
+    bin_dir="$REPO_ROOT/cowork-payload/$plugin/bin"
     if [[ -z "${MOUNTED_DIRS[$bin_dir]+x}" ]]; then
         MOUNTED_DIRS[$bin_dir]=1
         VOLUME_ARGS+=(--volume "${bin_dir}:/plugin/${plugin}/bin:ro")

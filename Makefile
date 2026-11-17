@@ -17,7 +17,9 @@ help: ## Show this help
 
 # ── Source sync ────────────────────────────────────────────────────────────────
 
-sync-sources: ## Copy latest source from sibling repos into src/ and plugins-bundle/
+# Claude plugins are not copied here: the earlbear-plugins formula installs them
+# from the EarlBear/marketplace-claude-plugins repo (scripts/install-plugins.sh).
+sync-sources: ## Copy latest CLI source from sibling repos into src/
 	@echo "$(BLUE)Syncing sources from $(EARLBEAR_ROOT)...$(NC)"
 	rsync -a --delete \
 		--exclude='tests/' --exclude='.venv/' --exclude='__pycache__/' \
@@ -44,11 +46,6 @@ sync-sources: ## Copy latest source from sibling repos into src/ and plugins-bun
 		$(EARLBEAR_ROOT)/earlbear-clis/transcripts-cli/ src/ebtranscripts/
 	cp $(EARLBEAR_ROOT)/earlbear-claude-agent/bin/agent-cli src/agent-cli/agent-cli.sh
 	chmod +x src/agent-cli/agent-cli.sh
-	rsync -a --delete \
-		--exclude='*/bin/' \
-		$(EARLBEAR_ROOT)/earlbear-claude-plugin-marketplace/plugins/ plugins-bundle/
-	rsync -a \
-		$(EARLBEAR_ROOT)/earlbear-claude-plugin-marketplace/.claude-plugin/ plugins-bundle/.claude-plugin/
 	@echo "$(GREEN)✓ Sources synced$(NC)"
 
 # ── Release ────────────────────────────────────────────────────────────────────
@@ -68,7 +65,7 @@ bump-and-release: ## Full release: tag + push + GitHub Release + upload plugin b
 	git push origin main "v$$v"; \
 	echo "$(BLUE)Creating GitHub Release v$$v...$(NC)"; \
 	gh release create "v$$v" --title "v$$v" --notes "Release v$$v" --latest; \
-	BUNDLES=$$(find plugins-bundle -name "*-bundle.zip" -type f 2>/dev/null); \
+	BUNDLES=$$(find cowork-payload -name "*-bundle.zip" -type f 2>/dev/null); \
 	if [ -n "$$BUNDLES" ]; then \
 		echo "$(BLUE)Uploading plugin wheel bundles...$(NC)"; \
 		gh release upload "v$$v" $$BUNDLES --clobber; \
@@ -88,7 +85,7 @@ release-plugin-wheels: ## Upload cowork plugin wheel bundles (*-bundle.zip) to t
 		echo "$(YELLOW)No git tag found. Run 'make bump-and-release VERSION=x.y.z' first.$(NC)"; \
 		exit 1; \
 	fi
-	@BUNDLES=$$(find plugins-bundle -name "*-bundle.zip" -type f 2>/dev/null); \
+	@BUNDLES=$$(find cowork-payload -name "*-bundle.zip" -type f 2>/dev/null); \
 	if [ -z "$$BUNDLES" ]; then \
 		echo "$(YELLOW)No wheel bundles found. Run 'make build-plugin-wheels' first.$(NC)"; \
 		exit 1; \
@@ -98,15 +95,17 @@ release-plugin-wheels: ## Upload cowork plugin wheel bundles (*-bundle.zip) to t
 	echo "$(GREEN)✓ Plugin wheel bundles uploaded to $(TAG)$(NC)"; \
 	gh release view "$(TAG)" --json assets --jq '.assets[].name' | sort
 
-lfs-status: ## Show which plugin binaries are tracked in git LFS
-	@echo "$(BLUE)Git LFS tracked files in plugins-bundle/:$(NC)"
-	@git lfs ls-files 2>/dev/null | grep "plugins-bundle" || echo "  (none yet — stage the binaries with 'git add plugins-bundle/*/bin/*-linux')"
+lfs-status: ## Show which cowork tool builds are tracked in git LFS
+	@echo "$(BLUE)Git LFS tracked files in cowork-payload/:$(NC)"
+	@git lfs ls-files 2>/dev/null | grep "cowork-payload" || echo "  (none yet — build them with 'make build-plugin-wheels', then stage cowork-payload/<plugin>/wheels/<cli>-bundle.zip)"
 
-install-hooks: ## Install git hooks (secrets scan + large-file guard) into .git/hooks/
+# Points git at the committed .githooks/ folder. This works in a worktree too,
+# where .git is a file and copying into .git/hooks/ fails.
+install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointing git at .githooks/
 	@echo "$(BLUE)==> Installing git hooks...$(NC)"
-	@cp scripts/pre-commit .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "$(GREEN)✓ Installed .git/hooks/pre-commit (gitleaks secrets scan + large-file guard)$(NC)"
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/*
+	@echo "$(GREEN)✓ core.hooksPath = $$(git config core.hooksPath) (gitleaks secrets scan + large-file guard)$(NC)"
 	@echo "$(BLUE)  Requires: brew install gitleaks$(NC)"
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
@@ -118,7 +117,11 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) into .git/
 # The wheel is pip-installed into bin/.venv inside the cowork project folder by
 # the EarlBear installer. The cowork shim calls bin/.venv/bin/<cli> directly.
 #
-# Outputs: plugins-bundle/<plugin>/wheels/<cli>-*.whl  (committed, no LFS needed)
+# Outputs: cowork-payload/<plugin>/wheels/<cli>-bundle.zip  (committed, in Git LFS)
+#          cowork-payload/<plugin>/wheels/*.whl             (gitignored scratch)
+# cowork-payload/ holds only the cowork tool builds and shims. It is not a
+# Claude plugin folder: the plugins themselves (skills, plugin.json) live in
+# the EarlBear/marketplace-claude-plugins repo.
 #
 # Usage:
 #   make build-plugin-wheels          # build wheels for all CLIs (~30s)
@@ -135,18 +138,18 @@ define build-wheel  # $(1)=cli $(2)=plugin
 #   pip install --no-index --find-links=bin/.wheels/ --target=bin/.deps <cli>
 #   export PYTHONPATH=bin/.deps PATH=bin/.deps/bin:$$PATH
 	@echo "$(BLUE)==> Building $(1) wheel bundle for cowork plugin delivery$(NC)"
-	@mkdir -p plugins-bundle/$(2)/wheels
+	@mkdir -p cowork-payload/$(2)/wheels
 	@docker run --rm \
 		-v "$(PWD)/src/$(1):/src" \
-		-v "$(PWD)/plugins-bundle/$(2)/wheels:/out" -w /src \
+		-v "$(PWD)/cowork-payload/$(2)/wheels:/out" -w /src \
 		python:3.11-slim \
 		bash -c "set -e && \
 		         pip install build -q && \
 		         python -m build --wheel --outdir /out . -q && \
 		         pip wheel . --wheel-dir /out -q" && \
-	cd plugins-bundle/$(2)/wheels && \
+	cd cowork-payload/$(2)/wheels && \
 	zip -qr $(1)-bundle.zip *.whl && \
-	echo "$(GREEN)✓ $(1)-bundle.zip ready in plugins-bundle/$(2)/wheels/$(NC)" && \
+	echo "$(GREEN)✓ $(1)-bundle.zip ready in cowork-payload/$(2)/wheels/$(NC)" && \
 	ls -lh *.whl *.zip
 endef
 

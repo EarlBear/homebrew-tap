@@ -225,8 +225,8 @@ make build-plugin-ebjira SKIP_AMD=1
 # Build both arches
 make build-plugin-ebjira
 
-# Output: plugins-bundle/jira-manager/bin/ebjira-aarch64-linux (~19MB)
-#         plugins-bundle/jira-manager/bin/ebjira-x86_64-linux  (~19MB)
+# Output: cowork-payload/jira-manager/bin/ebjira-aarch64-linux (~19MB)
+#         cowork-payload/jira-manager/bin/ebjira-x86_64-linux  (~19MB)
 ```
 
 Then prove the binary runs in the same environment as the cowork VM (Ubuntu 24.04 ARM64):
@@ -271,12 +271,18 @@ SKIP_AMD=1 make build-plugin-ebjira # x86_64 only
 
 **How it works**: `apt-get install binutils` + `pip install .` (resolves `pyproject.toml` deps) → PyInstaller bundles the installed console script + all deps into a single `--onefile` binary. No standalone `main.py` needed.
 
-**Output**: `plugins-bundle/<plugin>/bin/<cli>-aarch64-linux` and `<cli>-x86_64-linux`
+**Output**: `cowork-payload/<plugin>/bin/<cli>-aarch64-linux` and `<cli>-x86_64-linux`
 
-After running, commit the binaries via git LFS — they are automatically tracked by the `.gitattributes` pattern `plugins-bundle/**/bin/*-linux`:
+`cowork-payload/<plugin>/` holds only what the cowork VM needs beyond the plugin: the shim,
+these builds and the wheel bundles. The plugin itself (plugin.json, skills, confirm rules)
+lives in the marketplace repo and is not copied here.
+
+After running, commit the binaries via git LFS. The `.gitattributes` rule for
+`cowork-payload/**/bin/*-linux` is commented out now that wheels replaced these builds;
+turn it back on before committing new ones:
 
 ```bash
-git add plugins-bundle/<plugin>/bin/
+git add cowork-payload/<plugin>/bin/
 git commit -m "feat: add <cli> cowork plugin binaries"
 git push origin main   # LFS objects are pushed alongside the commit
 ```
@@ -298,5 +304,6 @@ This is the authoritative test that the binary is cowork-VM-compatible. It runs 
 
 - `docs/claude-app-internals.md` — full cowork VM architecture, inspection methodology
 - `/Applications/Claude.app/Contents/Resources/cowork-plugin-shim.sh` — shim library source (well-commented)
-- `plugins-bundle/jira-manager/` — existing plugin to convert
+- `../earlbear-claude-plugin-marketplace/plugins/jira-manager/` — existing plugin to convert
+- `cowork-payload/jira-manager/` — its cowork shim and builds
 - `src/ebjira/` — CLI source to compile

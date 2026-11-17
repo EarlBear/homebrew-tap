@@ -7,10 +7,10 @@
 #
 # Checks (in order, each blocks on failure):
 #   1. gitleaks            — no secrets in staged changes.
-#   2. generated-dir guard — plugins-bundle/ and src/ are GENERATED mirrors of the
-#                            source repos; hand-committing them clobbers LFS wheel
-#                            pointers and sweeps unrelated drift. Blocked unless
-#                            HOMEBREW_RELEASE=1 marks an intentional release.
+#   2. generated-dir guard — src/ is a GENERATED mirror of the source repos;
+#                            hand-committing it sweeps unrelated drift into one
+#                            commit. Blocked unless HOMEBREW_RELEASE=1 marks an
+#                            intentional release.
 #   3. LFS + large-file    — every LFS-tracked staged file must be a pointer (not a
 #                            raw blob), and no non-LFS file may exceed the size cap.
 
@@ -30,27 +30,26 @@ if ! gitleaks protect --staged --verbose; then
 fi
 
 # ── 2. Generated-directory guard ──────────────────────────────────────────────
-# plugins-bundle/ and src/ are produced by `make sync-sources` and reconciled by
-# the release flow (which is LFS-aware). A stray `sync-sources` + commit clobbers
-# LFS wheel pointers (bundle.zip), deletes wheels, and folds unrelated per-plugin
-# drift into one commit. Edit the SOURCE repos instead — new skills/plugins reach
-# the bundle at the next release. Set HOMEBREW_RELEASE=1 for an intentional
-# release commit that regenerates the bundle on purpose.
+# src/ is produced by `make sync-sources` and reconciled by the release flow. A
+# stray `sync-sources` + commit folds unrelated per-CLI drift into one commit.
+# Edit the SOURCE repos instead — CLI changes reach src/ at the next release.
+# Set HOMEBREW_RELEASE=1 for an intentional release commit that regenerates
+# src/ on purpose.
+# (Claude plugins are no longer copied here: the earlbear-plugins formula
+# installs them straight from the EarlBear/marketplace-claude-plugins repo.)
 if [ -z "${HOMEBREW_RELEASE:-}" ]; then
-    GEN=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^(plugins-bundle|src)/' || true)
+    GEN=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^src/' || true)
     if [ -n "$GEN" ]; then
         echo ""
-        echo "ERROR: staged changes touch generated dirs (plugins-bundle/ or src/):"
+        echo "ERROR: staged changes touch the generated dir src/:"
         echo "$GEN" | sed 's/^/  /' | head -20
         n=$(echo "$GEN" | wc -l | tr -d ' ')
         [ "$n" -gt 20 ] && echo "  ... ($n files total)"
         echo ""
-        echo "These are generated mirrors, not hand-edited sources:"
-        echo "  - Skills/plugins: edit earlbear-claude-plugin-marketplace; they reach"
-        echo "    plugins-bundle/ automatically at the next release."
+        echo "src/ is a generated mirror, not a hand-edited source:"
         echo "  - CLI code: edit earlbear-clis; it reaches src/ at the next release."
         echo ""
-        echo "To cut a release (regenerates + reconciles LFS on purpose):"
+        echo "To cut a release (regenerates src/ on purpose):"
         echo "  HOMEBREW_RELEASE=1 git commit ...   (or use the release flow)"
         echo "Skip (not recommended): git commit --no-verify"
         exit 1

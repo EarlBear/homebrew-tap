@@ -110,8 +110,8 @@ check "install-plugins.sh at libexec" \
     test -f /home/linuxbrew/.linuxbrew/opt/earlbear-plugins/libexec/install-plugins.sh
 check "install-plugins.sh executable" \
     test -x /home/linuxbrew/.linuxbrew/opt/earlbear-plugins/libexec/install-plugins.sh
-check "marketplace.json present" \
-    test -f /home/linuxbrew/.linuxbrew/opt/earlbear-plugins/libexec/marketplace/.claude-plugin/marketplace.json
+check "install-plugins.sh uses the GitHub marketplace" \
+    grep -q "EarlBear/marketplace-claude-plugins" /home/linuxbrew/.linuxbrew/opt/earlbear-plugins/libexec/install-plugins.sh
 
 # Structural invariants
 check "PATH includes linuxbrew bin" \

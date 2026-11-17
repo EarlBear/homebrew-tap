@@ -6,7 +6,8 @@
 #   2. Install Homebrew (linuxbrew) from scratch (NONINTERACTIVE)
 #   3. Tap earlbear/tap from the local repo (not GitHub)
 #   4. brew install ebdeck (Python venv formula — most complex formula)
-#   5. Mount plugins-bundle/ as a simulated cowork plugin directory
+#   5. Mount each cowork-payload/<plugin>/ (shim + Linux builds) as a simulated
+#      cowork plugin directory
 #   6. Run each cowork shim (bin/<cli>) and verify:
 #      - Shim resolves .cowork-lib/shim.sh (exits 2 = CONFIG_MISSING = pass)
 #      - No "command not found" or linker errors
@@ -66,7 +67,7 @@ trap cleanup EXIT
 if [[ "${SKIP_BUILD:-0}" == "1" ]]; then
     echo -e "${BLUE}==> Skipping compile (SKIP_BUILD=1) — using existing binaries${NC}"
     # Verify at least ebjira exists
-    if [[ ! -f "$REPO_ROOT/plugins-bundle/jira-manager/bin/ebjira-aarch64-linux" ]]; then
+    if [[ ! -f "$REPO_ROOT/cowork-payload/jira-manager/bin/ebjira-aarch64-linux" ]]; then
         echo -e "${RED}No compiled binaries found. Run 'make build-plugin-binaries SKIP_AMD=1' first.${NC}"
         exit 1
     fi
@@ -181,10 +182,10 @@ echo -e "${BLUE}==> Step 3: Start cowork-sim container${NC}"
 # Build volume mounts: each plugin's bin/ + the stub .cowork-lib/
 # Mirror the cowork VM's mount structure: plugins land under /mnt/<plugin>/
 VOLUME_ARGS=(
-    --volume "$REPO_ROOT/plugins-bundle/jira-manager:/mnt/jira-manager:ro"
-    --volume "$REPO_ROOT/plugins-bundle/earlbear-docs-manager:/mnt/earlbear-docs-manager:ro"
-    --volume "$REPO_ROOT/plugins-bundle/shopify-manager:/mnt/shopify-manager:ro"
-    --volume "$REPO_ROOT/plugins-bundle/deck-manager:/mnt/deck-manager:ro"
+    --volume "$REPO_ROOT/cowork-payload/jira-manager:/mnt/jira-manager:ro"
+    --volume "$REPO_ROOT/cowork-payload/earlbear-docs-manager:/mnt/earlbear-docs-manager:ro"
+    --volume "$REPO_ROOT/cowork-payload/shopify-manager:/mnt/shopify-manager:ro"
+    --volume "$REPO_ROOT/cowork-payload/deck-manager:/mnt/deck-manager:ro"
     # Inject the stub shim library at the path cowork shims walk up to find
     --volume "$SHIM_LIB_DIR:/mnt/.cowork-lib:ro"
 )

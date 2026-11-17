@@ -110,7 +110,7 @@ rsync_to_vm() {
         --exclude='src/*/build/' \
         --exclude='*.pyc' \
         --exclude='__pycache__/' \
-        --exclude='plugins-bundle/*/bin/*-linux' \
+        --exclude='cowork-payload/*/bin/*-linux' \
         -e "ssh $_SSH_OPTS" \
         "$@"
 }
@@ -215,16 +215,22 @@ git commit -q -m "tap snapshot"
 # (Same awk pattern as validation/docker/Dockerfile — only patches formula-level
 # sha256, not resource sha256s)
 cd ~
-tar -czf tap-v1.0.0.tar.gz -C ~ tap-src
-LOCAL_SHA=$(shasum -a 256 ~/tap-v1.0.0.tar.gz | awk '{print $1}')
-echo "Local tarball sha256: $LOCAL_SHA"
+# The tag is read from the formulas and the URL match takes any tag (vX.Y.Z), so a new
+# release needs no edit here. The tarball keeps the tag in its name because Homebrew
+# reads the formula version from the file name.
+TAG=$(sed -n 's|.*homebrew-tap/archive/refs/tags/\(v[0-9][0-9.]*[0-9]\)\.tar\.gz.*|\1|p' ~/tap-src/Formula/*.rb | head -1)
+[ -n "$TAG" ] || { echo "No release tag found in Formula/*.rb"; exit 1; }
+tar -czf "tap-$TAG.tar.gz" -C ~ tap-src
+LOCAL_URL="file:///Users/admin/tap-$TAG.tar.gz"
+LOCAL_SHA=$(shasum -a 256 ~/"tap-$TAG.tar.gz" | awk '{print $1}')
+echo "Local tarball for $TAG, sha256: $LOCAL_SHA"
 
 for f in ~/tap-src/Formula/*.rb; do
     sed -i '' \
-        "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.0.0.tar.gz\"|url \"file:///Users/admin/tap-v1.0.0.tar.gz\"|g" \
+        "s|url \"https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v[0-9][0-9.]*\.tar\.gz\"|url \"$LOCAL_URL\"|g" \
         "$f"
-    awk -v sha="$LOCAL_SHA" \
-        '/url "file:\/\/\/Users\/admin\/tap-v1\.0\.0\.tar\.gz"/{found=1}
+    awk -v sha="$LOCAL_SHA" -v url="$LOCAL_URL" \
+        'index($0, url){found=1}
          found && /^  sha256 "[0-9a-f]{64}"/{sub(/"[0-9a-f]{64}"/, "\"" sha "\""); found=0}
          {print}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 done

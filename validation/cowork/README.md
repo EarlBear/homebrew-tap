@@ -62,7 +62,7 @@ runs 11 smoke checks inside the container via `container exec`:
 | `brew list earlbear-plugins` | Formula recorded as installed |
 | `install-plugins.sh` at libexec | Correct path (not `share/earlbear/`) |
 | `install-plugins.sh` executable | Post-create hook can run |
-| `marketplace.json` present | Plugin bundle intact |
+| `install-plugins.sh` names `EarlBear/marketplace-claude-plugins` | Plugins come from the GitHub marketplace, not a local copy |
 | PATH contains linuxbrew bin | Shell environment correct |
 | WORKDIR is `/workspace` | Container starts in right directory |
 | `python3.11 --version` | Homebrew-managed Python available |
