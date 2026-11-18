@@ -1,4 +1,4 @@
-.PHONY: help sync-sources bump-and-release release-plugin-wheels lfs-status install-hooks \
+.PHONY: help sync-sources bump-and-release release-plugin-wheels lfs-status install-hooks secret-scan-ci \
         validate validate-audit validate-docker validate-smoke validate-vm tart-pull tart-build-base validate-cowork validate-plugin-wheels validate-cowork-sim cowork-sim-build-base \
         build-plugin-wheels build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
         clean clean-container-cache
@@ -107,6 +107,13 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 	@chmod +x .githooks/*
 	@echo "$(GREEN)✓ core.hooksPath = $$(git config core.hooksPath) (gitleaks secrets scan + large-file guard)$(NC)"
 	@echo "$(BLUE)  Requires: brew install gitleaks$(NC)"
+
+# The GitHub check (.github/workflows/secret-scan.yml) runs this target. BASE is the commit just
+# before the new ones; on the Mac it defaults to origin/main, so it scans what this branch adds.
+# Findings are redacted, so a found secret never lands in the GitHub run log.
+secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
+	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks is not installed: brew install gitleaks"; exit 1; }
+	gitleaks git --redact --verbose --log-opts="$(or $(BASE),origin/main)..HEAD" .
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
