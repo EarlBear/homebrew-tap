@@ -111,9 +111,13 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 # The GitHub check (.github/workflows/secret-scan.yml) runs this target. BASE is the commit just
 # before the new ones; on the Mac it defaults to origin/main, so it scans what this branch adds.
 # Findings are redacted, so a found secret never lands in the GitHub run log.
+# gitleaks prints "no leaks found" and exits 0 when the range names a commit that is not here, so
+# the target checks the base first and fails rather than passing without scanning anything.
+SCAN_BASE = $(or $(BASE),origin/main)
 secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
 	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks is not installed: brew install gitleaks"; exit 1; }
-	gitleaks git --redact --verbose --log-opts="$(or $(BASE),origin/main)..HEAD" .
+	@git rev-parse --verify --quiet "$(SCAN_BASE)^{commit}" >/dev/null || { echo "No commit '$(SCAN_BASE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
+	gitleaks git --redact --verbose --log-opts="$(SCAN_BASE)..HEAD" .
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
