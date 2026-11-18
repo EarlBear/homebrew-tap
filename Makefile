@@ -111,19 +111,21 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 # The GitHub check (.github/workflows/secret-scan.yml) runs this target. BASE is the commit just
 # before the new ones; on the Mac it defaults to origin/main, so it scans what this branch adds.
 # Findings are redacted, so a found secret never lands in the GitHub run log.
-# gitleaks prints "no leaks found" and exits 0 when the range names a commit that is not here, so
-# the target checks the base first and fails rather than passing without scanning anything.
+# gitleaks prints "no leaks found" and exits 0 when its `git log` fails (a range that names a
+# commit that is not here, or a git too old for --diff-merges, which needs 2.31), so the target
+# runs the same `git log` first and fails rather than passing without scanning anything.
 # BASE=all scans every commit HEAD reaches; the GitHub check uses it when it has no earlier
 # commit to start from (a force-push, a manual run). --diff-merges=first-parent makes gitleaks
-# read what each merge commit changed, so a secret typed while resolving a conflict is scanned
-# too (plain `git log -p` shows merges with no diff).
+# read each merge commit's whole change against its first parent, so a secret typed while
+# resolving a conflict is scanned too (plain `git log -p` shows merges with no diff). That change
+# also holds everything the merge brought in, so a finding can show twice, once under the merge.
 SCAN_BASE = $(or $(BASE),origin/main)
-SCAN_FROM = $(if $(filter all,$(SCAN_BASE)),HEAD,$(SCAN_BASE))
 SCAN_RANGE = $(if $(filter all,$(SCAN_BASE)),HEAD,$(SCAN_BASE)..HEAD)
+SCAN_LOG_OPTS = --diff-merges=first-parent $(SCAN_RANGE)
 secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
 	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks is not installed: brew install gitleaks"; exit 1; }
-	@git rev-parse --verify --quiet "$(SCAN_FROM)^{commit}" >/dev/null || { echo "No commit '$(SCAN_BASE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
-	gitleaks git --redact --verbose --log-opts="--diff-merges=first-parent $(SCAN_RANGE)" .
+	@git log -1 --format=%H $(SCAN_LOG_OPTS) -- >/dev/null || { echo "git cannot list '$(SCAN_RANGE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
+	gitleaks git --redact --verbose --log-opts="$(SCAN_LOG_OPTS)" .
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
