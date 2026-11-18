@@ -113,11 +113,17 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 # Findings are redacted, so a found secret never lands in the GitHub run log.
 # gitleaks prints "no leaks found" and exits 0 when the range names a commit that is not here, so
 # the target checks the base first and fails rather than passing without scanning anything.
+# BASE=all scans every commit HEAD reaches; the GitHub check uses it when it has no earlier
+# commit to start from (a force-push, a manual run). --diff-merges=first-parent makes gitleaks
+# read what each merge commit changed, so a secret typed while resolving a conflict is scanned
+# too (plain `git log -p` shows merges with no diff).
 SCAN_BASE = $(or $(BASE),origin/main)
+SCAN_FROM = $(if $(filter all,$(SCAN_BASE)),HEAD,$(SCAN_BASE))
+SCAN_RANGE = $(if $(filter all,$(SCAN_BASE)),HEAD,$(SCAN_BASE)..HEAD)
 secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
 	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks is not installed: brew install gitleaks"; exit 1; }
-	@git rev-parse --verify --quiet "$(SCAN_BASE)^{commit}" >/dev/null || { echo "No commit '$(SCAN_BASE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
-	gitleaks git --redact --verbose --log-opts="$(SCAN_BASE)..HEAD" .
+	@git rev-parse --verify --quiet "$(SCAN_FROM)^{commit}" >/dev/null || { echo "No commit '$(SCAN_BASE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
+	gitleaks git --redact --verbose --log-opts="--diff-merges=first-parent $(SCAN_RANGE)" .
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
