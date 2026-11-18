@@ -3,8 +3,8 @@ class Ebtranscripts < Formula
 
   desc "Extract Claude Code session telemetry and publish sanitized transcripts"
   homepage "https://github.com/EarlBear/homebrew-tap"
-  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
+  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.2.0.tar.gz"
+  sha256 "1613bb363d5106328b1837dc6eced11020200b93474baa0015972e99e78d1a74"
   license "MIT"
 
   # pip builds every resource from source. pydantic-core and the uv_build backend that
