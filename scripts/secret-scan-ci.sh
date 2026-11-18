@@ -14,6 +14,7 @@
 # in from main is not scanned again under the merge's id. In a merge commit gitleaks names the file
 # "b/<path>", so a path pattern may not match there: an allowlisted path can show up as a finding,
 # and a rule that only looks at certain paths (a path pattern starting with ^) can miss a secret.
+# For such a finding the scan suggests two .gitleaksignore lines, one for each form of the name.
 # git shows no diff at all for a merge of three or more branches, so the scan refuses one.
 #
 # What this check can't stop:
@@ -28,9 +29,12 @@
 # - A push to main scans only that push's commits. From 2026-11-18 pull requests reach main as
 #   squash merges, each scanned first as a pull request, so a failed run on main is fixed by hand;
 #   a later push does not scan it again. (Main's older history has ordinary merge commits too.)
-# - A .gitleaksignore line in the form the scan suggests (file:rule:line, no commit id) keeps
-#   working after a squash merge, but it also accepts any later secret the same rule finds on that
-#   line of that file. That is why .gitleaksignore needs a person's sign-off.
+# - A .gitleaksignore line in the form the scan suggests (file:rule:line, no commit id) names no
+#   commit, so a squash merge does not break it, but the line number must still match. The scan
+#   names a second line when a later commit on the branch moved the secret. If main adds lines
+#   above it before the merge, the run on main names a new line, and that is fixed by hand.
+#   Such a line also accepts any later secret the same rule finds on that line of that file.
+#   That is why .gitleaksignore needs a person's sign-off.
 #
 # Exit status: 0 nothing found, 1 secrets found, 2 the scan could not run, did not finish, or had
 # no commits to scan.
@@ -108,8 +112,19 @@ trap 'cat "$tmp/log" >&2 2>/dev/null; echo "secret-scan-ci: stopped before the s
 
 # No --verbose: it prints the text around each match, and a second secret on the same line would
 # show in the log. The findings are listed below from the report instead, without the secret text.
-gitleaks git --no-banner --redact --report-format json --report-path "$tmp/report.json" \
-  --log-opts="--diff-merges=remerge $range" . 2>"$tmp/log"
+# The person's own git settings can change the diff gitleaks reads (a file named i/<path> instead
+# of b/<path>, or colour codes) until it finds nothing. Settings given this way win over every
+# config file, so the Mac reads the same plain diff GitHub does. The trailing -- keeps a file
+# named like the range (HEAD) from being read as a path.
+GIT_CONFIG_COUNT=6 \
+  GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=never \
+  GIT_CONFIG_KEY_1=color.diff GIT_CONFIG_VALUE_1=never \
+  GIT_CONFIG_KEY_2=diff.noprefix GIT_CONFIG_VALUE_2=false \
+  GIT_CONFIG_KEY_3=diff.mnemonicPrefix GIT_CONFIG_VALUE_3=false \
+  GIT_CONFIG_KEY_4=diff.srcPrefix GIT_CONFIG_VALUE_4=a/ \
+  GIT_CONFIG_KEY_5=diff.dstPrefix GIT_CONFIG_VALUE_5=b/ \
+  gitleaks git --no-banner --redact --report-format json --report-path "$tmp/report.json" \
+  --log-opts="--diff-merges=remerge $range --" . 2>"$tmp/log"
 status=$?
 cat "$tmp/log" >&2
 
@@ -135,14 +150,32 @@ if [ -s "$tmp/report.json" ]; then
     if [ "$count" -gt 0 ]; then
       echo "secret-scan-ci: secrets found on $count line(s) in '$range' (the secret text is not shown):" >&2
       # A fingerprint without the commit id still matches after a squash merge gives the line a
-      # new commit, so that is the one to accept a finding with. In a merge commit gitleaks names
-      # the file b/<path>; the path after a squash merge has no b/, so drop it for merges only (a
-      # real top folder named b keeps its name).
+      # new commit, so that is the one to accept a finding with. Extra lines are named when the
+      # branch's own check and the check on main after a squash merge need different ones.
       merges=$(git rev-list --min-parents=2 "$range" --)
-      jq -r --arg merges "$merges" 'unique_by(.Fingerprint) | .[]
-        | .Commit as $c
-        | (if ($c != "" and ($merges | contains($c))) then (.File | sub("^b/"; "")) else .File end) as $f
-        | "  \($f):\(.StartLine)  rule \(.RuleID)  commit \(.Commit[0:12])\n    to accept it, add this line to .gitleaksignore: \($f):\(.RuleID):\(.StartLine)"' "$tmp/report.json" >&2
+      jq -r 'unique_by(.Fingerprint) | .[] | [.File, (.StartLine | tostring), .RuleID, .Commit] | @tsv' \
+        "$tmp/report.json" >"$tmp/findings.tsv"
+      tab=$(printf '\t')
+      while IFS=$tab read -r file line rule commit; do
+        # In a merge commit gitleaks names the file b/<path>, and a squash merge names it <path>.
+        # Only merge commits lose the b/, so a real top folder named b keeps its name.
+        path=$file
+        if [ -n "$commit" ]; then
+          case $merges in *"$commit"*) path=${file#b/} ;; esac
+        fi
+        echo "  $path:$line  rule $rule  commit $(printf '%.12s' "$commit")" >&2
+        echo "    to accept it, add this line to .gitleaksignore: $path:$rule:$line" >&2
+        if [ "$path" != "$file" ]; then
+          echo "    and, for this branch's own check (a merge commit names the file b/<path>): $file:$rule:$line" >&2
+        fi
+        # A squash merge puts the line where it is now. If a later commit on the branch moved it,
+        # name that line too. Best effort: when git can't place it, nothing extra is printed.
+        now=$(git blame --porcelain HEAD -- "$path" 2>/dev/null \
+          | awk -v c="$commit" -v n="$line" '$1 == c && $2 == n { print $3; exit }')
+        if [ -n "$now" ] && [ "$now" != "$line" ]; then
+          echo "    and, for the check on main after a squash merge (a later commit moved the line): $path:$rule:$now" >&2
+        fi
+      done <"$tmp/findings.tsv"
       [ "$logged_err" = no ] || echo "secret-scan-ci: gitleaks also logged errors (the ERR lines above), so there may be more" >&2
       exit 1
     fi
