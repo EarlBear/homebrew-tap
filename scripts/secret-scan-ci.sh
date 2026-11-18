@@ -32,7 +32,8 @@
 #   working after a squash merge, but it also accepts any later secret the same rule finds on that
 #   line of that file. That is why .gitleaksignore needs a person's sign-off.
 #
-# Exit status: 0 nothing found, 1 secrets found, 2 the scan could not run or did not finish.
+# Exit status: 0 nothing found, 1 secrets found, 2 the scan could not run, did not finish, or had
+# no commits to scan.
 set -u
 
 PINNED=8.30.1   # the version the GitHub check installs; keep it the same as the workflow's
@@ -86,6 +87,12 @@ if ! git log -1 --format=%H --diff-merges=remerge "$range" -- >/dev/null; then
   exit 2
 fi
 commits=$(git rev-list --count "$range" --)
+# No commits would pass as a clean scan, which hides a wrong or lost BASE. Say so and stop.
+case $commits in
+  '' | *[!0-9]* | 0)
+    echo "secret-scan-ci: '$range' holds no commits, so there is nothing to scan. Pass a BASE before the commits you mean, or 'all'." >&2
+    exit 2 ;;
+esac
 
 octopus=$(git rev-list --min-parents=3 "$range" -- | head -n 1)
 if [ -n "$octopus" ]; then
@@ -119,11 +126,23 @@ fi
 if [ -s "$tmp/report.json" ]; then
   if command -v jq >/dev/null 2>&1; then
     count=$(jq 'unique_by(.Fingerprint) | length' "$tmp/report.json" 2>/dev/null)
-    if [ "${count:-0}" -gt 0 ]; then
+    # A report jq can't read must not pass as "nothing found".
+    case $count in
+      '' | *[!0-9]*)
+        echo "secret-scan-ci: jq could not read gitleaks' report, so the findings can't be listed; the scan did not finish" >&2
+        exit 2 ;;
+    esac
+    if [ "$count" -gt 0 ]; then
       echo "secret-scan-ci: secrets found on $count line(s) in '$range' (the secret text is not shown):" >&2
       # A fingerprint without the commit id still matches after a squash merge gives the line a
-      # new commit, so that is the one to accept a finding with.
-      jq -r 'unique_by(.Fingerprint) | .[] | "  \(.File):\(.StartLine)  rule \(.RuleID)  commit \(.Commit[0:12])\n    to accept it, add this line to .gitleaksignore: \(.File):\(.RuleID):\(.StartLine)"' "$tmp/report.json" >&2
+      # new commit, so that is the one to accept a finding with. In a merge commit gitleaks names
+      # the file b/<path>; the path after a squash merge has no b/, so drop it for merges only (a
+      # real top folder named b keeps its name).
+      merges=$(git rev-list --min-parents=2 "$range" --)
+      jq -r --arg merges "$merges" 'unique_by(.Fingerprint) | .[]
+        | .Commit as $c
+        | (if ($c != "" and ($merges | contains($c))) then (.File | sub("^b/"; "")) else .File end) as $f
+        | "  \($f):\(.StartLine)  rule \(.RuleID)  commit \(.Commit[0:12])\n    to accept it, add this line to .gitleaksignore: \($f):\(.RuleID):\(.StartLine)"' "$tmp/report.json" >&2
       [ "$logged_err" = no ] || echo "secret-scan-ci: gitleaks also logged errors (the ERR lines above), so there may be more" >&2
       exit 1
     fi
