@@ -108,24 +108,16 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 	@echo "$(GREEN)✓ core.hooksPath = $$(git config core.hooksPath) (gitleaks secrets scan + large-file guard)$(NC)"
 	@echo "$(BLUE)  Requires: brew install gitleaks$(NC)"
 
-# The GitHub check (.github/workflows/secret-scan.yml) runs this target. BASE is the commit just
-# before the new ones; on the Mac it defaults to origin/main, so it scans what this branch adds.
-# Findings are redacted, so a found secret never lands in the GitHub run log.
-# gitleaks prints "no leaks found" and exits 0 when its `git log` fails (a range that names a
-# commit that is not here, or a git too old for --diff-merges, which needs 2.31), so the target
-# runs the same `git log` first and fails rather than passing without scanning anything.
-# BASE=all scans every commit HEAD reaches; the GitHub check uses it when it has no earlier
-# commit to start from (a force-push, a manual run). --diff-merges=first-parent makes gitleaks
-# read each merge commit's whole change against its first parent, so a secret typed while
-# resolving a conflict is scanned too (plain `git log -p` shows merges with no diff). That change
-# also holds everything the merge brought in, so a finding can show twice, once under the merge.
-SCAN_BASE = $(or $(BASE),origin/main)
-SCAN_RANGE = $(if $(filter all,$(SCAN_BASE)),HEAD,$(SCAN_BASE)..HEAD)
-SCAN_LOG_OPTS = --diff-merges=first-parent $(SCAN_RANGE)
+# The GitHub check (.github/workflows/secret-scan.yml) runs this target; scripts/secret-scan-ci.sh
+# does the scan and says at its top what it scans and what it can't stop. BASE=all scans every
+# commit. Only a BASE typed on the command line counts, so a BASE left in the shell's environment
+# can't change what is scanned. It reaches the script unexpanded, as an environment value, never as
+# make or shell text. (make passes every variable typed on the command line to each recipe's
+# environment, expanding it on the way; unexport stops that for BASE.)
+unexport BASE
+secret-scan-ci: export SECRET_SCAN_BASE = $(if $(filter command line,$(origin BASE)),$(value BASE))
 secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
-	@command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks is not installed: brew install gitleaks"; exit 1; }
-	@git log -1 --format=%H $(SCAN_LOG_OPTS) -- >/dev/null || { echo "git cannot list '$(SCAN_RANGE)' in this checkout, so nothing would be scanned. Run git fetch, or pass BASE=<commit>."; exit 1; }
-	gitleaks git --redact --verbose --log-opts="$(SCAN_LOG_OPTS)" .
+	@sh scripts/secret-scan-ci.sh "$$SECRET_SCAN_BASE"
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
