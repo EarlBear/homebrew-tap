@@ -42,8 +42,20 @@ if [ ${#SYNC_MOUNT[@]} -eq 0 ]; then
     SYNC_MOUNT=(-v "$DIST_DIR:/app/dist")
 fi
 
+# Jira settings already set in the environment win over the file. agent-cli reads the token from
+# the Keychain and exports it, so without this a token kept only in the Keychain never reached the
+# container. `-e NAME` with no value makes Docker copy it from this environment, so the token is
+# not on the command line where `ps` would show it.
+PASS_ENV=()
+for var in JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN; do
+    if [ -n "${!var:-}" ]; then
+        PASS_ENV+=(-e "$var")
+    fi
+done
+
 exec docker run --rm \
     --env-file "$ENV_FILE" \
+    ${PASS_ENV[@]+"${PASS_ENV[@]}"} \
     "${SYNC_MOUNT[@]}" \
     ebjira \
     "$@"

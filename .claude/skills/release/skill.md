@@ -25,7 +25,7 @@ LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
 echo "Last tap tag: $LAST_TAG"
 
 git -C ../earlbear-clis        log --oneline $(git ls-remote ../earlbear-clis HEAD | cut -f1)..HEAD -- 2>/dev/null | head -10 || true
-git -C ../earlbear              log --oneline HEAD~5..HEAD -- bin/agent-cli 2>/dev/null | head -5 || true
+git -C ../earlbear-claude-agent log --oneline HEAD~5..HEAD -- bin/agent-cli 2>/dev/null | head -5 || true
 git -C ../earlbear-claude-plugin-marketplace log --oneline HEAD~5..HEAD 2>/dev/null | head -5 || true
 
 # 2. Has EarlBear/apps shipped a new installer release?

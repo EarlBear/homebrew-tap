@@ -13,7 +13,7 @@ Sync the latest CLI source from sibling repos into `src/` and run a quick audit.
 ### 1. Check sibling repos exist
 
 ```bash
-ls ../earlbear-clis/jira-cli/ ../earlbear-clis/deck-cli/ ../earlbear/bin/agent-cli
+ls ../earlbear-clis/jira-cli/ ../earlbear-clis/deck-cli/ ../earlbear-claude-agent/bin/agent-cli
 ```
 
 The Claude plugins are not synced here; the `earlbear-plugins` formula installs them from the
