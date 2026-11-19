@@ -204,6 +204,8 @@ class Ebtranscripts < Formula
       Local Postgres mode (EBT_LOCAL_DB_URL) is not part of this install: it needs psycopg,
       which this formula leaves out. It is for development, from the source repo:
         pip install '.[local]'
+      Do not set EBT_LOCAL_DB_URL in ~/.config/earlbear/.env for this install: with no
+      Supabase settings, the hourly sync would then fail on the missing psycopg.
       Supabase mode works from this install.
     EOS
   end
