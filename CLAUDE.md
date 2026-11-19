@@ -44,7 +44,8 @@ All CLIs read from `~/.config/earlbear/.env`. Override with `EARLBEAR_CONFIG_DIR
 `agent-cli` is the exception for Jira: it takes the address, email and token as one set, from the
 shell when it sets all three, otherwise from `.env` (the Keychain fills in a token `.env` lacks). A
 partial set in the shell is ignored with a warning. It hands the set to the ebjira wrapper with
-`EBJIRA_USE_SHELL_SETTINGS=1`.
+`EBJIRA_USE_SHELL_SETTINGS=1`; with that set, the wrapper also runs when `.env` is missing (it
+leaves out `--env-file`). A plain `ebjira` with no `.env` still stops with `CONFIG_MISSING`.
 
 ## Development workflow
 

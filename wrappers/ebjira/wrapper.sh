@@ -3,17 +3,24 @@
 # Proxies commands into the ebjira Docker container.
 #
 # Credentials: reads from $EARLBEAR_CONFIG_DIR/.env (default ~/.config/earlbear/.env)
-# Run `earlbear-setup` or create the file manually before first use.
+# Run `earlbear-setup` or create the file manually before first use. Run from agent-cli with a whole
+# set in the shell (EBJIRA_USE_SHELL_SETTINGS=1), the file may be missing.
 
 set -euo pipefail
 
 EARLBEAR_CONFIG_DIR="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}"
 ENV_FILE="$EARLBEAR_CONFIG_DIR/.env"
 
-# Ensure .env exists
+# Ensure .env exists. agent-cli (EBJIRA_USE_SHELL_SETTINGS=1, below) may have taken the whole
+# address, email and token set from the shell, which needs no .env: then the file is left out.
+ENV_FILE_ARGS=(--env-file "$ENV_FILE")
 if [ ! -f "$ENV_FILE" ]; then
-    echo '{"error": "CONFIG_MISSING", "message": "~/.config/earlbear/.env not found. Run: earlbear-setup"}' >&2
-    exit 2
+    if [ "${EBJIRA_USE_SHELL_SETTINGS:-}" = 1 ]; then
+        ENV_FILE_ARGS=()
+    else
+        echo '{"error": "CONFIG_MISSING", "message": "~/.config/earlbear/.env not found. Run: earlbear-setup"}' >&2
+        exit 2
+    fi
 fi
 
 # Build image if it doesn't exist — Dockerfile is in the formula libexec
@@ -60,7 +67,7 @@ if [ "${EBJIRA_USE_SHELL_SETTINGS:-}" = 1 ]; then
 fi
 
 exec docker run --rm \
-    --env-file "$ENV_FILE" \
+    ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
     ${PASS_ENV[@]+"${PASS_ENV[@]}"} \
     "${SYNC_MOUNT[@]}" \
     ebjira \

@@ -48,6 +48,24 @@ case "$out" in *"--env-file $tmp/cfg/.env -e JIRA_API_TOKEN"*)
   ok "--env-file is still passed, with the worked-out settings added by name" ;;
   *) bad "--env-file and the worked-out settings are not both passed ($out)" ;; esac
 
+# Review of claude-agent-env PR #378, round 3, finding 5: agent-cli accepts a whole set from the
+# shell with no .env, so the wrapper must run then too, without an --env-file Docker can't open.
+mkdir -p "$tmp/cfg-none"
+run_none() {
+  out="$(env -u JIRA_BASE_URL -u JIRA_USER_EMAIL -u JIRA_PROJECT -u JIRA_API_TOKEN \
+    -u EBJIRA_USE_SHELL_SETTINGS PATH="$tmp/bin:$PATH" EARLBEAR_CONFIG_DIR="$tmp/cfg-none" \
+    "$@" bash "$WRAPPER" issue list 2>&1)"; rc=$?
+}
+run_none EBJIRA_USE_SHELL_SETTINGS=1 JIRA_BASE_URL=https://shell.invalid \
+  JIRA_USER_EMAIL=someone@shell.invalid JIRA_API_TOKEN=made-up
+case "$rc $out" in "0 docker run"*"-e JIRA_API_TOKEN"*)
+  case "$out" in *--env-file*) bad "with no .env, --env-file is still passed ($out)" ;;
+    *) ok "from agent-cli with no .env, the settings are passed in and --env-file is left out" ;; esac ;;
+  *) bad "from agent-cli with no .env, the wrapper did not run docker (rc=$rc: $out)" ;; esac
+run_none JIRA_API_TOKEN=made-up
+case "$rc $out" in "2 "*CONFIG_MISSING*) ok "a plain ebjira with no .env still stops with CONFIG_MISSING" ;;
+  *) bad "a plain ebjira with no .env did not stop with CONFIG_MISSING (rc=$rc: $out)" ;; esac
+
 # The wrapper only forwards the settings when agent-cli sets EBJIRA_USE_SHELL_SETTINGS. Run the
 # agent-cli copy in src/ through the real wrapper, so a re-sync of an agent-cli that no longer sets
 # it fails here instead of quietly dropping a token kept only in the Keychain.
@@ -68,6 +86,15 @@ case "$out" in *"-e JIRA_API_TOKEN"*)
   *) bad "the Keychain token did not reach the container ($out)" ;; esac
 case "$out" in *made-up-keychain*) bad "the Keychain token's value is on the docker command line" ;;
   *) ok "the Keychain token is passed by name, not by value" ;; esac
+
+echo
+echo "== agent-cli through the ebjira wrapper: the whole set in the shell, no .env =="
+out="$(env -u JIRA_PROJECT -u EBJIRA_USE_SHELL_SETTINGS -u CHECKIN_EPIC_KEY PATH="$tmp/bin:$PATH" \
+  EARLBEAR_CONFIG_DIR="$tmp/cfg-none" JIRA_BASE_URL=https://shell.invalid \
+  JIRA_USER_EMAIL=someone@shell.invalid JIRA_API_TOKEN=made-up \
+  bash "$tmp/agent/agent-cli" history EARL-1 2>&1)"; rc=$?
+case "$rc $out" in "0 "*"docker run"*"-e JIRA_API_TOKEN"*) ok "agent-cli with no .env reaches the container" ;;
+  *) bad "agent-cli with no .env did not reach the container (rc=$rc: $out)" ;; esac
 
 echo
 echo "  $pass passed, $fail failed"
