@@ -178,6 +178,9 @@ class Ebtranscripts < Formula
     venv = virtualenv_create(libexec/"venv", "python3.11")
     venv.pip_install resources
     venv.pip_install_and_link libexec/"ebtranscripts"
+    # `ebtranscripts render` falls back to this console script when uvx is not on PATH;
+    # pip_install_and_link only links ebtranscripts' own scripts, so link it explicitly.
+    bin.install_symlink libexec/"venv/bin/claude-code-transcripts"
   end
 
   # Hourly telemetry sync (consent-gated; no-ops until transcripts.toml consent=true).
