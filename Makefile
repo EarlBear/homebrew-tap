@@ -1,4 +1,4 @@
-.PHONY: help sync-sources bump-and-release release-plugin-wheels lfs-status install-hooks \
+.PHONY: help sync-sources bump-and-release release-plugin-wheels lfs-status install-hooks secret-scan-ci \
         validate validate-audit validate-docker validate-smoke validate-vm tart-pull tart-build-base validate-cowork validate-plugin-wheels validate-cowork-sim cowork-sim-build-base \
         build-plugin-wheels build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
         clean clean-container-cache
@@ -107,6 +107,17 @@ install-hooks: ## Install git hooks (secrets scan + large-file guard) by pointin
 	@chmod +x .githooks/*
 	@echo "$(GREEN)✓ core.hooksPath = $$(git config core.hooksPath) (gitleaks secrets scan + large-file guard)$(NC)"
 	@echo "$(BLUE)  Requires: brew install gitleaks$(NC)"
+
+# The GitHub check (.github/workflows/secret-scan.yml) runs this target; scripts/secret-scan-ci.sh
+# does the scan and says at its top what it scans and what it can't stop. BASE=all scans every
+# commit. Only a BASE typed on the command line counts, so a BASE left in the shell's environment
+# can't change what is scanned. It reaches the script unexpanded, as an environment value, never as
+# make or shell text. (make passes every variable typed on the command line to each recipe's
+# environment, expanding it on the way; unexport stops that for BASE.)
+unexport BASE
+secret-scan-ci: export SECRET_SCAN_BASE = $(if $(filter command line,$(origin BASE)),$(value BASE))
+secret-scan-ci: ## Scan the commits after BASE for secrets, as the GitHub check does (BASE defaults to origin/main)
+	@sh scripts/secret-scan-ci.sh "$$SECRET_SCAN_BASE"
 
 # ── Cowork plugin wheels ────────────────────────────────────────────────────────
 #
