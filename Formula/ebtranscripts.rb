@@ -3,13 +3,17 @@ class Ebtranscripts < Formula
 
   desc "Extract Claude Code session telemetry and publish sanitized transcripts"
   homepage "https://github.com/EarlBear/homebrew-tap"
-  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "58d34db85c4ebb48cb12ea70ec1f1ea864d7d026e91ce6085bb8ec81628b657d"
+  url "https://github.com/EarlBear/homebrew-tap/archive/refs/tags/v1.2.0.tar.gz"
+  sha256 "1613bb363d5106328b1837dc6eced11020200b93474baa0015972e99e78d1a74"
   license "MIT"
 
   # pip builds every resource from source. pydantic-core and the uv_build backend that
   # claude-code-transcripts needs are Rust, built with maturin, so the build needs Rust.
   depends_on "rust" => :build
+  # gitleaks is the sanitizer's second-layer secret scan: the Drive gate refuses without it,
+  # and the self-test skips that layer when it is missing. The `earlbear` formula gets it
+  # through this one.
+  depends_on "gitleaks"
   depends_on "libyaml"
   depends_on "python@3.11"
 
@@ -178,15 +182,32 @@ class Ebtranscripts < Formula
     venv = virtualenv_create(libexec/"venv", "python3.11")
     venv.pip_install resources
     venv.pip_install_and_link libexec/"ebtranscripts"
+    # `ebtranscripts render` falls back to this console script when uvx is not on PATH;
+    # pip_install_and_link only links ebtranscripts' own scripts, so link it explicitly.
+    bin.install_symlink libexec/"venv/bin/claude-code-transcripts"
   end
 
   # Hourly telemetry sync (consent-gated; no-ops until transcripts.toml consent=true).
+  # launchd starts services with only /usr/bin:/bin:/usr/sbin:/sbin on PATH; give it
+  # Homebrew's bin so the sync can find gitleaks (its second-layer secret scan).
   service do
     run [opt_bin/"ebtranscripts", "sync", "--quiet"]
+    environment_variables PATH: std_service_path_env
     run_type :interval
     interval 3600
     log_path var/"log/ebtranscripts.log"
     error_log_path var/"log/ebtranscripts.log"
+  end
+
+  def caveats
+    <<~EOS
+      Local Postgres mode (EBT_LOCAL_DB_URL) is not part of this install: it needs psycopg,
+      which this formula leaves out. It is for development, from the source repo:
+        pip install '.[local]'
+      Do not set EBT_LOCAL_DB_URL in ~/.config/earlbear/.env for this install: with no
+      Supabase settings, the hourly sync would then fail on the missing psycopg.
+      Supabase mode works from this install.
+    EOS
   end
 
   test do

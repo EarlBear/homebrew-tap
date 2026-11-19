@@ -204,8 +204,7 @@ git diff v1.0.0..v1.1.0 -- Formula/ src/ wrappers/
   if still identical, something went wrong with the tag (check `git rev-parse vTAG^{}`
   matches what GitHub shows).
 
-**State after v1.1.0 (current):**
-- All `Formula/*.rb` urls → `v1.1.0`
-- All `Formula/*.rb` sha256 → `0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5`
-  (same as v1.0.0 — expected, no Formula/src changes between the two tags)
-- `Casks/earlbear-installer.rb` → `installer-v1.0.0`, sha256 `cbfe28cc...`
+**State after v1.2.0 (current):**
+- All 8 `Formula/*.rb` urls → `v1.2.0`
+- All 8 `Formula/*.rb` sha256 → `1613bb363d5106328b1837dc6eced11020200b93474baa0015972e99e78d1a74`
+- `Casks/earlbear-installer.rb` → `installer-v1.1.0`, sha256 `6e10f8c1...`
