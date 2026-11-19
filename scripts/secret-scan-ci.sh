@@ -6,7 +6,7 @@
 #
 # Usage: sh scripts/secret-scan-ci.sh [BASE]
 #   BASE   a commit or branch: scan the commits after it (default origin/main)
-#   all    scan every commit HEAD reaches (a manual run, or after a force-push to main)
+#   all    scan every commit HEAD reaches (a manual run, or when the start commit is gone)
 # Run the script itself to see exit 1 and 2 apart: through make, both come back as 2.
 #
 # How it reads merge commits: --diff-merges=remerge shows only what was typed while resolving the
@@ -35,9 +35,9 @@
 #   above it before the merge, the run on main names a new line, and that is fixed by hand.
 #   Such a line also accepts any later secret the same rule finds on that line of that file.
 #   That is why .gitleaksignore needs a person's sign-off.
-# - On the Mac, a setting kept inside one checkout can still hide a secret: a line like `* -diff`
-#   in its .git/info/attributes, or a setting in its .git/config that the scan does not pin.
-#   GitHub's fresh checkout has neither, so its check is the safety net for those.
+# - Anything on one Mac that changes what git shows (the checkout's own .git/config or
+#   .git/info/attributes, a git or gitleaks build, the environment) can change the Mac's result.
+#   The GitHub run, on a clean checkout, is the check that counts.
 #
 # Exit status: 0 nothing found, 1 secrets found, 2 the scan could not run, did not finish, or had
 # no commits to scan.
@@ -46,14 +46,17 @@ set -u
 PINNED=8.30.1   # the version the GitHub check installs; keep it the same as the workflow's
 
 # Every git call below, gitleaks' own included, reads the real commits with no personal or system
-# config (~/.gitconfig, ~/.config/git/config, /etc/gitconfig), no settings passed in the
-# environment (git -c, GIT_CONFIG_PARAMETERS), and no local stand-in commits (git replace). Any of
-# those could make the scan read something other than the real diff and pass with a secret in it.
-# Settings are switched off as a whole, not one by one, so a new one can't slip through.
+# config (~/.gitconfig, ~/.config/git/config, /etc/gitconfig), no system attributes file, no
+# settings passed in the environment (git -c, GIT_CONFIG_PARAMETERS), and no local stand-in commits
+# (git replace). Any of those could make the scan read something other than the real diff and pass
+# with a secret in it. GitHub has none of them, so the Mac matches it. They are switched off as a
+# whole, not one by one, so a new one can't slip through. The checkout's own .git/config and
+# .git/info/attributes still apply (see "What this check can't stop" above).
 GIT_CONFIG_GLOBAL=/dev/null
 GIT_CONFIG_NOSYSTEM=1
+GIT_ATTR_NOSYSTEM=1
 GIT_NO_REPLACE_OBJECTS=1
-export GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM GIT_NO_REPLACE_OBJECTS
+export GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM GIT_ATTR_NOSYSTEM GIT_NO_REPLACE_OBJECTS
 unset GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
 
 # gitleaks reads .gitleaks.toml and .gitleaksignore from the folder it scans, so scan from the top.
@@ -126,14 +129,15 @@ trap 'cat "$tmp/log" >&2 2>/dev/null; echo "secret-scan-ci: stopped before the s
 
 # No --verbose: it prints the text around each match, and a second secret on the same line would
 # show in the log. The findings are listed below from the report instead, without the secret text.
-# Personal and system config are already off (see the top). The settings below also win over the
-# checkout's own .git/config, for the ones that matter most: colour codes or a file named i/<path>
-# instead of b/<path> could make gitleaks find nothing, log.showRoot=false would hide the first
-# commit's diff, and log.abbrevCommit would shorten the commit ids the findings below are matched
-# by. core.attributesFile=/dev/null and --no-textconv stop a personal attributes file
-# (~/.config/git/attributes) marking files binary (-diff) or passing them through a filter. The
-# repo's own .gitattributes still applies, as it does on GitHub. The trailing -- keeps a file
-# named like the range (HEAD) from being read as a path.
+# Personal and system config and the system attributes file are already off (see the top). The
+# settings below also win over the checkout's own .git/config, for the ones that matter most:
+# colour codes or a file named i/<path> instead of b/<path> could make gitleaks find nothing,
+# log.showRoot=false would hide the first commit's diff, and log.abbrevCommit would shorten the
+# commit ids the findings below are matched by. With no personal config git still reads
+# ~/.config/git/attributes by default; core.attributesFile=/dev/null switches that off, and
+# --no-textconv stops a diff filter. The repo's own .gitattributes still applies, as it does on
+# GitHub, and so does the checkout's own .git/info/attributes. The trailing -- keeps a file named
+# like the range (HEAD) from being read as a path.
 GIT_CONFIG_COUNT=9 \
   GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=never \
   GIT_CONFIG_KEY_1=color.diff GIT_CONFIG_VALUE_1=never \
