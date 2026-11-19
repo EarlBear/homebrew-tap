@@ -114,17 +114,24 @@ trap 'cat "$tmp/log" >&2 2>/dev/null; echo "secret-scan-ci: stopped before the s
 # show in the log. The findings are listed below from the report instead, without the secret text.
 # The person's own git settings can change the diff gitleaks reads (a file named i/<path> instead
 # of b/<path>, or colour codes) until it finds nothing. Settings given this way win over every
-# config file, so the Mac reads the same plain diff GitHub does. The trailing -- keeps a file
+# config file, so the Mac reads the same plain diff GitHub does. log.showRoot=false would hide the
+# first commit's diff, and log.abbrevCommit would shorten the commit ids the findings below are
+# matched by. A personal attributes file (~/.config/git/attributes) could mark files binary (-diff)
+# or give them a textconv filter: core.attributesFile=/dev/null and --no-textconv stop those. The
+# repo's own .gitattributes still applies, as it does on GitHub. The trailing -- keeps a file
 # named like the range (HEAD) from being read as a path.
-GIT_CONFIG_COUNT=6 \
+GIT_CONFIG_COUNT=9 \
   GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=never \
   GIT_CONFIG_KEY_1=color.diff GIT_CONFIG_VALUE_1=never \
   GIT_CONFIG_KEY_2=diff.noprefix GIT_CONFIG_VALUE_2=false \
   GIT_CONFIG_KEY_3=diff.mnemonicPrefix GIT_CONFIG_VALUE_3=false \
   GIT_CONFIG_KEY_4=diff.srcPrefix GIT_CONFIG_VALUE_4=a/ \
   GIT_CONFIG_KEY_5=diff.dstPrefix GIT_CONFIG_VALUE_5=b/ \
+  GIT_CONFIG_KEY_6=log.showRoot GIT_CONFIG_VALUE_6=true \
+  GIT_CONFIG_KEY_7=log.abbrevCommit GIT_CONFIG_VALUE_7=false \
+  GIT_CONFIG_KEY_8=core.attributesFile GIT_CONFIG_VALUE_8=/dev/null \
   gitleaks git --no-banner --redact --report-format json --report-path "$tmp/report.json" \
-  --log-opts="--diff-merges=remerge $range --" . 2>"$tmp/log"
+  --log-opts="--no-textconv --diff-merges=remerge $range --" . 2>"$tmp/log"
 status=$?
 cat "$tmp/log" >&2
 
