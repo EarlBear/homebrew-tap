@@ -10,6 +10,10 @@ class Ebtranscripts < Formula
   # pip builds every resource from source. pydantic-core and the uv_build backend that
   # claude-code-transcripts needs are Rust, built with maturin, so the build needs Rust.
   depends_on "rust" => :build
+  # gitleaks is the sanitizer's second-layer secret scan: the Drive gate refuses without it,
+  # and the self-test skips that layer when it is missing. The `earlbear` formula gets it
+  # through this one.
+  depends_on "gitleaks"
   depends_on "libyaml"
   depends_on "python@3.11"
 
@@ -193,6 +197,15 @@ class Ebtranscripts < Formula
     interval 3600
     log_path var/"log/ebtranscripts.log"
     error_log_path var/"log/ebtranscripts.log"
+  end
+
+  def caveats
+    <<~EOS
+      Local Postgres mode (EBT_LOCAL_DB_URL) is not part of this install: it needs psycopg,
+      which this formula leaves out. It is for development, from the source repo:
+        pip install '.[local]'
+      Supabase mode works from this install.
+    EOS
   end
 
   test do
