@@ -81,7 +81,9 @@ docker_running() {
 run_one() {
     local out="$1"; shift
     : > "$work/config/.env"   # a fresh, empty settings file for every command
+    # The ebjira wrapper forwards exported JIRA_* values into the container, so clear them here.
     EARLBEAR_CONFIG_DIR="$work/config" PATH="$work/bin:$PATH" \
+        env -u JIRA_BASE_URL -u JIRA_USER_EMAIL -u JIRA_PROJECT -u JIRA_API_TOKEN \
         perl -e '
             my $t = shift;
             my $pid = fork() // die "fork: $!\n";
