@@ -42,16 +42,22 @@ if [ ${#SYNC_MOUNT[@]} -eq 0 ]; then
     SYNC_MOUNT=(-v "$DIST_DIR:/app/dist")
 fi
 
-# Jira settings already set in the environment win over the file. agent-cli reads the token from
-# the Keychain and exports it, so without this a token kept only in the Keychain never reached the
-# container. `-e NAME` with no value makes Docker copy it from this environment, so the token is
-# not on the command line where `ps` would show it.
+# One order for the Jira settings, set by agent-cli: the shell, then (the token only) the
+# Keychain, then .env. agent-cli works the values out, exports them and sets
+# EBJIRA_USE_SHELL_SETTINGS=1, and only then are they passed in, so the container uses exactly what
+# agent-cli checked. Without this a token kept only in the Keychain never reached the container.
+# A plain `ebjira` run by hand reads only .env, so a JIRA_* exported for some other tool can't
+# point it at a different Jira. `-e NAME` with no value makes Docker copy it from this
+# environment, so the token is not on the command line where `ps` would show it, and an -e value
+# wins over --env-file.
 PASS_ENV=()
-for var in JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN; do
-    if [ -n "${!var:-}" ]; then
-        PASS_ENV+=(-e "$var")
-    fi
-done
+if [ "${EBJIRA_USE_SHELL_SETTINGS:-}" = 1 ]; then
+    for var in JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN; do
+        if [ -n "${!var:-}" ]; then
+            PASS_ENV+=(-e "$var")
+        fi
+    done
+fi
 
 exec docker run --rm \
     --env-file "$ENV_FILE" \

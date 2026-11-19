@@ -169,6 +169,10 @@ build-plugin-wheels: build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop
 
 # ── Validation ─────────────────────────────────────────────────────────────────
 
+validate-wrappers: ## Tier 0 — the Docker wrappers' own logic, with stand-in brew and docker (seconds, offline)
+	@echo "$(BLUE)==> Tier 0: Wrapper tests$(NC)"
+	bash validation/wrappers/test-ebjira-wrapper.sh
+
 validate-audit: ## Tier 1 — brew audit + style in Docker (~30s)
 	@echo "$(BLUE)==> Tier 1: Formula audit$(NC)"
 	docker build --platform linux/amd64 -t earlbear-audit -f validation/audit/Dockerfile .

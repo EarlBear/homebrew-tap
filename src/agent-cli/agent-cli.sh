@@ -16,9 +16,12 @@ EBJIRA="$SCRIPT_DIR/ebjira"
 ENV_FILE="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}/.env"
 
 # ── Load credentials ──
-# Sensitive tokens: read from macOS Keychain first, fall back to .env.
-# Non-secret config (URLs, emails, project keys): read from .env via grep.
-# Never source the whole .env — avoids bulk-exporting all vars into the shell.
+# One order for every Jira setting: a value already set in the shell wins; then, for the token
+# only, the macOS Keychain; then .env. ebjira's Docker wrapper is told (EBJIRA_USE_SHELL_SETTINGS)
+# to pass these exact values into the container, so what agent-cli checks here is what ebjira uses.
+# A plain `ebjira` run by hand reads only .env.
+# Non-secret config is read from .env via grep. Never source the whole .env — avoids
+# bulk-exporting all vars into the shell.
 # Loaded only by commands that talk to Jira, so `help` works before setup (the Homebrew formula's
 # test runs `agent-cli help` with no settings file). scripts/tests/test-agent-cli.sh checks both.
 
@@ -39,22 +42,23 @@ load_credentials() {
         exit 1
     fi
 
-    JIRA_BASE_URL="$(_env_get JIRA_BASE_URL)"
-    JIRA_USER_EMAIL="$(_env_get JIRA_USER_EMAIL)"
+    JIRA_BASE_URL="${JIRA_BASE_URL:-$(_env_get JIRA_BASE_URL)}"
+    JIRA_USER_EMAIL="${JIRA_USER_EMAIL:-$(_env_get JIRA_USER_EMAIL)}"
     JIRA_PROJECT="${JIRA_PROJECT:-$(_env_get JIRA_PROJECT)}"
     JIRA_PROJECT="${JIRA_PROJECT:-EARL}"
-    JIRA_API_TOKEN="$(_keychain_get JIRA_API_TOKEN)"
+    JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(_keychain_get JIRA_API_TOKEN)}"
 
     local missing=""
     [ -n "$JIRA_BASE_URL" ] || missing="$missing JIRA_BASE_URL"
     [ -n "$JIRA_USER_EMAIL" ] || missing="$missing JIRA_USER_EMAIL"
     [ -n "$JIRA_API_TOKEN" ] || missing="$missing JIRA_API_TOKEN"
     if [ -n "$missing" ]; then
-        echo "Error: not set in $ENV_FILE (or, for the token, the Keychain):$missing" >&2
+        echo "Error: not set in the shell or $ENV_FILE (or, for the token, the Keychain):$missing" >&2
         exit 1
     fi
 
-    export JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN
+    EBJIRA_USE_SHELL_SETTINGS=1
+    export JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN EBJIRA_USE_SHELL_SETTINGS
 
     CHECKIN_EPIC_KEY="${CHECKIN_EPIC_KEY:-$(_env_get CHECKIN_EPIC_KEY)}"
 }
@@ -112,6 +116,8 @@ ${BOLD}HELP${RESET}
   help                      Show this message
 
 ${BOLD}ENVIRONMENT${RESET}
+  A Jira setting set in the shell (JIRA_BASE_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT)
+  wins over .env. The token is then looked for in the Keychain, then in .env.
   JIRA_PROJECT              Jira project key (default: EARL)
   CHECKIN_EPIC_KEY          Epic key for check-in subtasks (required for 'checkins')
 

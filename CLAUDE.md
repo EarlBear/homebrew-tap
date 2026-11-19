@@ -55,6 +55,7 @@ make sync-sources
 # 2. Edit Formula/*.rb or src/*/wrapper.sh
 
 # 3. Validate
+make validate-wrappers # Tier 0: the Docker wrappers' own logic, offline (seconds)
 make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: every installed command answers --help with its own name (~1min; longer on first run while Docker images build)
@@ -89,6 +90,7 @@ make release-plugin-wheels          # upload wheels to an existing tag's release
 
 | Tier | Target | Time | What it catches |
 |---|---|---|---|
+| 0 | `make validate-wrappers` | seconds | The Docker wrappers' own logic (which Jira settings reach the ebjira container), with stand-in `brew` and `docker` |
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
 | 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
