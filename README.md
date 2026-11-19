@@ -118,6 +118,7 @@ Inside the container, `ebdeck` and `earlbear-plugins` are pre-installed. Credent
 make sync-sources
 
 # Run validation suite
+make validate-wrappers # seconds — the Docker wrappers' own logic, offline
 make validate-audit    # ~30s  — brew audit/style in Docker
 make validate-docker   # ~5min — brew install in Docker (Linux x86_64)
 make validate-smoke    # ~1min — every installed command answers --help with its own name

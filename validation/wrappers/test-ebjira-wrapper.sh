@@ -3,8 +3,8 @@
 #
 # agent-cli works out each setting (the shell, then the Keychain for the token, then .env), exports
 # it and sets EBJIRA_USE_SHELL_SETTINGS=1. Only then does the wrapper pass the shell's values in.
-# A plain `ebjira` reads only .env. Stand-in `brew` and `docker` commands print what they were
-# asked, so nothing is built or run. Offline, made-up values only.
+# A plain `ebjira` reads only .env. Stand-in `brew`, `docker` and `security` (the Keychain)
+# commands print what they were asked, so nothing is built or run. Offline, made-up values only.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -42,9 +42,31 @@ case "$out" in *"-e JIRA_USER_EMAIL"*) bad "a setting that is not set was passed
   *) ok "a setting that is not set is not passed in" ;; esac
 
 run EBJIRA_USE_SHELL_SETTINGS=1 JIRA_API_TOKEN=made-up
+# Docker lets an -e value win over --env-file wherever it sits; this only checks .env is still read.
 case "$out" in *"--env-file $tmp/cfg/.env -e JIRA_API_TOKEN"*)
-  ok "the passed-in values come after --env-file, so they win over .env" ;;
-  *) bad "the passed-in values are not after --env-file ($out)" ;; esac
+  ok "--env-file is still passed, with the worked-out settings added by name" ;;
+  *) bad "--env-file and the worked-out settings are not both passed ($out)" ;; esac
+
+# The wrapper only forwards the settings when agent-cli sets EBJIRA_USE_SHELL_SETTINGS. Run the
+# agent-cli copy in src/ through the real wrapper, so a re-sync of an agent-cli that no longer sets
+# it fails here instead of quietly dropping a token kept only in the Keychain.
+echo
+echo "== agent-cli through the ebjira wrapper: a token kept only in the Keychain =="
+mkdir -p "$tmp/agent" "$tmp/cfg-agent"
+cp "$ROOT/src/agent-cli/agent-cli.sh" "$tmp/agent/agent-cli"
+ln -s "$WRAPPER" "$tmp/agent/ebjira"
+printf '#!/bin/bash\necho made-up-keychain\n' > "$tmp/bin/security"
+chmod +x "$tmp/bin/security"
+printf 'JIRA_BASE_URL=https://file.invalid\nJIRA_USER_EMAIL=someone@file.invalid\n' \
+  > "$tmp/cfg-agent/.env"
+out="$(env -u JIRA_BASE_URL -u JIRA_USER_EMAIL -u JIRA_PROJECT -u JIRA_API_TOKEN \
+  -u EBJIRA_USE_SHELL_SETTINGS -u CHECKIN_EPIC_KEY PATH="$tmp/bin:$PATH" \
+  EARLBEAR_CONFIG_DIR="$tmp/cfg-agent" bash "$tmp/agent/agent-cli" history EARL-1 2>&1)"
+case "$out" in *"-e JIRA_API_TOKEN"*)
+  ok "agent-cli passes the Keychain token through the wrapper into the container" ;;
+  *) bad "the Keychain token did not reach the container ($out)" ;; esac
+case "$out" in *made-up-keychain*) bad "the Keychain token's value is on the docker command line" ;;
+  *) ok "the Keychain token is passed by name, not by value" ;; esac
 
 echo
 echo "  $pass passed, $fail failed"

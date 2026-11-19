@@ -41,6 +41,8 @@ curl -sL https://github.com/EarlBear/apps/releases/download/installer-vX.Y.Z/Ear
 ## Credentials convention
 
 All CLIs read from `~/.config/earlbear/.env`. Override with `EARLBEAR_CONFIG_DIR`.
+`agent-cli` is the exception for Jira: a `JIRA_*` value set in the shell wins, then (for the token)
+the Keychain, then `.env`; it hands those to the ebjira wrapper with `EBJIRA_USE_SHELL_SETTINGS=1`.
 
 ## Development workflow
 
@@ -90,7 +92,7 @@ make release-plugin-wheels          # upload wheels to an existing tag's release
 
 | Tier | Target | Time | What it catches |
 |---|---|---|---|
-| 0 | `make validate-wrappers` | seconds | The Docker wrappers' own logic (which Jira settings reach the ebjira container), with stand-in `brew` and `docker` |
+| 0 | `make validate-wrappers` | seconds | The Docker wrappers' own logic (which Jira settings reach the ebjira container, including a Keychain-only token sent by `src/agent-cli`), with stand-in `brew`, `docker` and `security` |
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
 | 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
