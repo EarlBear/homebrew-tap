@@ -81,7 +81,11 @@ docker_running() {
 run_one() {
     local out="$1"; shift
     : > "$work/config/.env"   # a fresh, empty settings file for every command
+    # agent-cli prefers JIRA_* set in the shell, and the ebjira wrapper forwards them into the
+    # container when EBJIRA_USE_SHELL_SETTINGS=1. Clear all five so only the empty .env is read.
     EARLBEAR_CONFIG_DIR="$work/config" PATH="$work/bin:$PATH" \
+        env -u JIRA_BASE_URL -u JIRA_USER_EMAIL -u JIRA_PROJECT -u JIRA_API_TOKEN \
+            -u EBJIRA_USE_SHELL_SETTINGS \
         perl -e '
             my $t = shift;
             my $pid = fork() // die "fork: $!\n";

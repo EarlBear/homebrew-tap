@@ -1,5 +1,5 @@
 .PHONY: help sync-sources bump-and-release release-plugin-wheels lfs-status install-hooks \
-        validate validate-audit validate-docker validate-smoke validate-vm tart-pull tart-build-base validate-cowork validate-plugin-wheels validate-cowork-sim cowork-sim-build-base \
+        validate validate-wrappers validate-audit validate-docker validate-smoke validate-vm tart-pull tart-build-base validate-cowork validate-plugin-wheels validate-cowork-sim cowork-sim-build-base \
         build-plugin-wheels build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop build-plugin-ebdeck \
         clean clean-container-cache
 
@@ -169,6 +169,10 @@ build-plugin-wheels: build-plugin-ebjira build-plugin-ebdocs build-plugin-ebshop
 
 # ── Validation ─────────────────────────────────────────────────────────────────
 
+validate-wrappers: ## Tier 0 — the Docker wrappers' own logic, with stand-in brew and docker (seconds, offline)
+	@echo "$(BLUE)==> Tier 0: Wrapper tests$(NC)"
+	bash validation/wrappers/test-ebjira-wrapper.sh
+
 validate-audit: ## Tier 1 — brew audit + style in Docker (~30s)
 	@echo "$(BLUE)==> Tier 1: Formula audit$(NC)"
 	docker build --platform linux/amd64 -t earlbear-audit -f validation/audit/Dockerfile .
@@ -279,7 +283,8 @@ validate-cowork: ## Tier 5 — cowork devcontainer via apple/container (~10min, 
 	}
 	bash validation/cowork/cowork-test.sh
 
-validate: ## Run tiers 1+2+4 (CI=1: +VM; COWORK=1: +cowork devcontainer; PLUGINS=1: +plugin binaries)
+validate: ## Run tiers 0+1+2+4 (CI=1: +VM; COWORK=1: +cowork devcontainer; PLUGINS=1: +plugin binaries)
+	@$(MAKE) --no-print-directory validate-wrappers
 	@$(MAKE) --no-print-directory validate-audit
 	@$(MAKE) --no-print-directory validate-docker
 	@$(MAKE) --no-print-directory validate-smoke

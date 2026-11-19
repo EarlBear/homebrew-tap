@@ -41,6 +41,10 @@ curl -sL https://github.com/EarlBear/apps/releases/download/installer-vX.Y.Z/Ear
 ## Credentials convention
 
 All CLIs read from `~/.config/earlbear/.env`. Override with `EARLBEAR_CONFIG_DIR`.
+`agent-cli` is the exception for Jira: it takes the address, email and token as one set, from the
+shell when it sets all three, otherwise from `.env` (the Keychain fills in a token `.env` lacks). A
+partial set in the shell is ignored with a warning. It hands the set to the ebjira wrapper with
+`EBJIRA_USE_SHELL_SETTINGS=1`.
 
 ## Development workflow
 
@@ -55,6 +59,7 @@ make sync-sources
 # 2. Edit Formula/*.rb or src/*/wrapper.sh
 
 # 3. Validate
+make validate-wrappers # Tier 0: the Docker wrappers' own logic, offline (seconds)
 make validate-audit    # Tier 1: brew audit/style in Docker (~30s)
 make validate-docker   # Tier 2: brew install in Docker (~5min)
 make validate-smoke    # Tier 4: every installed command answers --help with its own name (~1min; longer on first run while Docker images build)
@@ -89,6 +94,7 @@ make release-plugin-wheels          # upload wheels to an existing tag's release
 
 | Tier | Target | Time | What it catches |
 |---|---|---|---|
+| 0 | `make validate-wrappers` | seconds | The Docker wrappers' own logic (which Jira settings reach the ebjira container, including a Keychain-only token sent by `src/agent-cli`), with stand-in `brew`, `docker` and `security` |
 | 1 | `make validate-audit` | ~30s | Ruby syntax, Homebrew policy violations |
 | 2 | `make validate-docker` | ~5min | Packaging bugs, bad install paths (Linux x86_64) |
 | 3 | `make validate-vm` | ~15min (~10min with snapshot) | Full clean-room install on real macOS from **local source** (rsync + sha256 patch, Apple Silicon; prereqs: `tart` + `sshpass` + `make tart-pull`; optional speedup: `make tart-build-base`) |
@@ -163,7 +169,8 @@ Migrate to 1Password CLI (Option A) when team grows to ≥2 developers.
 - `src/ebdocs/` ← `../earlbear-clis/gdocs-cli/`
 - `src/ebshop/` ← `../earlbear-clis/shopify-cli/`
 - `src/ebdeck/` ← `../earlbear-clis/deck-cli/`
-- `src/agent-cli/` ← `../earlbear/bin/agent-cli`
+- `src/ebtranscripts/` ← `../earlbear-clis/transcripts-cli/`
+- `src/agent-cli/agent-cli.sh` ← `../earlbear-claude-agent/bin/agent-cli`
 
 The Claude plugins are **not** copied here. The `earlbear-plugins` formula installs only
 `scripts/install-plugins.sh`, which adds the private GitHub marketplace

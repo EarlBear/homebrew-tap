@@ -30,10 +30,13 @@ a pass, on the idea that exit 2 meant "no settings file yet" (CONFIG_MISSING).
 
 ## Still open (found by the new test, not fixed here)
 
-- `agent-cli` exits 1 when `.env` is missing, before it reads `--help`, and reads the Keychain
-  first. The fix belongs in its source repo (EarlBear/claude-agent-env `bin/agent-cli`), then a
-  sync. `src/` is not hand-edited here.
 - `ebdeck` on one Mac had a broken Python environment ("bad interpreter"); `brew reinstall ebdeck`.
+
+## Fixed since (found by the new test)
+
+- `agent-cli` exited 1 when `.env` was missing, before it read `--help`. Fixed in its source repo
+  (`../earlbear-claude-agent/bin/agent-cli`) and copied into `src/agent-cli/agent-cli.sh`; it
+  reaches installs with the next tap release (v1.2.1).
 
 ## Don't bring back
 
