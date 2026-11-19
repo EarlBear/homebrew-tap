@@ -12,48 +12,82 @@ set -euo pipefail
 # ── Paths ──
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EBJIRA="$SCRIPT_DIR/ebjira"
+# ebjira next to this script (a Homebrew install links both into one bin folder); otherwise the
+# one on PATH, which covers a source checkout of this repo (no bin/ebjira here) and a copy run from
+# somewhere else. load_credentials says so if neither is there.
+if [ -x "$SCRIPT_DIR/ebjira" ]; then
+    EBJIRA="$SCRIPT_DIR/ebjira"
+else
+    EBJIRA="$(command -v ebjira || true)"
+fi
 ENV_FILE="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}/.env"
 
 # ── Load credentials ──
-# One order for every Jira setting: a value already set in the shell wins; then, for the token
-# only, the macOS Keychain; then .env. ebjira's Docker wrapper is told (EBJIRA_USE_SHELL_SETTINGS)
-# to pass these exact values into the container, so what agent-cli checks here is what ebjira uses.
-# A plain `ebjira` run by hand reads only .env.
+# The Jira address, email and token are taken together, from one place, so a token is never sent
+# to an address set for some other tool:
+#   - the shell, when it sets all three (JIRA_BASE_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN);
+#   - otherwise .env, with the macOS Keychain filling in the token only when .env has none. A
+#     shell that sets some but not all of them is ignored, with a warning.
+# .env before the Keychain, so agent-cli uses the same token as a plain `ebjira` run by hand.
+# ebjira's Docker wrapper is told (EBJIRA_USE_SHELL_SETTINGS) to pass these exact values into the
+# container, so what agent-cli checks here is what ebjira uses. Only the wrapper in homebrew-tap
+# v1.2.1 and later does that (tap PR #8); an older one reads .env alone, so release the two together.
 # Non-secret config is read from .env via grep. Never source the whole .env — avoids
 # bulk-exporting all vars into the shell.
-# Loaded only by commands that talk to Jira, so `help` works before setup (the Homebrew formula's
-# test runs `agent-cli help` with no settings file). scripts/tests/test-agent-cli.sh checks both.
+# Loaded only by commands that talk to Jira, after their arguments are checked, so `help` and a
+# usage error work before setup (the Homebrew formula's test runs `agent-cli help` with no settings
+# file). scripts/tests/test-agent-cli.sh in the claude-agent-env repo checks both.
 
-# A key missing from .env is an empty answer, not a failure: under `set -euo pipefail` grep's
-# "no match" would otherwise end the script silently, before any default or message could run.
 _keychain_get() {
-    security find-generic-password -a "${USER:-$(id -un)}" -s "earlbear.$1" -w 2>/dev/null \
-        || grep -s "^$1=" "$ENV_FILE" | cut -d= -f2- \
-        || true
+    security find-generic-password -a "${USER:-$(id -un)}" -s "earlbear.$1" -w 2>/dev/null || true
 }
+# The last line for the key wins, as when a shell reads the file; one pair of surrounding quotes and
+# Windows line endings are dropped. A key missing from .env is an empty answer, not a failure: under
+# `set -euo pipefail` grep's "no match" would otherwise end the script silently.
 _env_get() {
-    grep -s "^$1=" "$ENV_FILE" | cut -d= -f2- || true
+    local v
+    v="$(grep -s "^$1=" "$ENV_FILE" | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
+    case "$v" in
+        \"*\") v="${v#\"}"; v="${v%\"}" ;;
+        \'*\') v="${v#\'}"; v="${v%\'}" ;;
+    esac
+    printf '%s' "$v"
 }
 
 load_credentials() {
-    if [ ! -f "$ENV_FILE" ]; then
-        echo "Error: $ENV_FILE not found. Run the EarlBear Installer or 'make keychain-to-env'." >&2
-        exit 1
+    if [ -n "${JIRA_BASE_URL:-}" ] && [ -n "${JIRA_USER_EMAIL:-}" ] && [ -n "${JIRA_API_TOKEN:-}" ]; then
+        :   # the shell's set, whole
+    else
+        local partial=""
+        [ -z "${JIRA_BASE_URL:-}" ] || partial="$partial JIRA_BASE_URL"
+        [ -z "${JIRA_USER_EMAIL:-}" ] || partial="$partial JIRA_USER_EMAIL"
+        [ -z "${JIRA_API_TOKEN:-}" ] || partial="$partial JIRA_API_TOKEN"
+        if [ -n "$partial" ]; then
+            echo "Warning: the shell sets only$partial, not all of JIRA_BASE_URL, JIRA_USER_EMAIL and JIRA_API_TOKEN, so it is ignored and all three come from $ENV_FILE." >&2
+        fi
+        JIRA_BASE_URL="$(_env_get JIRA_BASE_URL)"
+        JIRA_USER_EMAIL="$(_env_get JIRA_USER_EMAIL)"
+        JIRA_API_TOKEN="$(_env_get JIRA_API_TOKEN)"
+        JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(_keychain_get JIRA_API_TOKEN)}"
     fi
-
-    JIRA_BASE_URL="${JIRA_BASE_URL:-$(_env_get JIRA_BASE_URL)}"
-    JIRA_USER_EMAIL="${JIRA_USER_EMAIL:-$(_env_get JIRA_USER_EMAIL)}"
+    # The project key names no host and holds no secret, so the shell may set it on its own.
     JIRA_PROJECT="${JIRA_PROJECT:-$(_env_get JIRA_PROJECT)}"
     JIRA_PROJECT="${JIRA_PROJECT:-EARL}"
-    JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(_keychain_get JIRA_API_TOKEN)}"
 
     local missing=""
     [ -n "$JIRA_BASE_URL" ] || missing="$missing JIRA_BASE_URL"
     [ -n "$JIRA_USER_EMAIL" ] || missing="$missing JIRA_USER_EMAIL"
     [ -n "$JIRA_API_TOKEN" ] || missing="$missing JIRA_API_TOKEN"
     if [ -n "$missing" ]; then
-        echo "Error: not set in the shell or $ENV_FILE (or, for the token, the Keychain):$missing" >&2
+        if [ ! -f "$ENV_FILE" ]; then
+            echo "Error: $ENV_FILE not found. Run the EarlBear Installer or 'make keychain-to-env'." >&2
+        else
+            echo "Error: not set in $ENV_FILE (or, for the token, the Keychain):$missing" >&2
+        fi
+        exit 1
+    fi
+    if [ -z "$EBJIRA" ]; then
+        echo "Error: ebjira not found next to $SCRIPT_DIR/agent-cli or on PATH. Install it with 'brew install earlbear/tap/ebjira'." >&2
         exit 1
     fi
 
@@ -104,7 +138,7 @@ ${BOLD}STATUS${RESET}
   history ISSUE_KEY         Show full issue details with all comments
 
 ${BOLD}CHECK-INS${RESET}
-  checkins                  List check-in subtasks (requires CHECKIN_EPIC_KEY in .env)
+  checkins                  List check-in subtasks (requires CHECKIN_EPIC_KEY in the shell or .env)
   checkin ISSUE_KEY         View a specific check-in
 
 ${BOLD}ACTIONS${RESET}
@@ -116,8 +150,8 @@ ${BOLD}HELP${RESET}
   help                      Show this message
 
 ${BOLD}ENVIRONMENT${RESET}
-  A Jira setting set in the shell (JIRA_BASE_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT)
-  wins over .env. The token is then looked for in the Keychain, then in .env.
+  JIRA_BASE_URL, JIRA_USER_EMAIL and JIRA_API_TOKEN come as one set: from the shell when it sets
+  all three, otherwise from .env (the token from the Keychain when .env has none).
   JIRA_PROJECT              Jira project key (default: EARL)
   CHECKIN_EPIC_KEY          Epic key for check-in subtasks (required for 'checkins')
 
@@ -132,6 +166,7 @@ cmd_assign() {
     # Bulk mode: --jql "..."
     if [ "${1:-}" = "--jql" ]; then
         require_arg "${2:-}" "assign --jql requires a JQL string"
+        load_credentials
         local jql="$2"
         header "Searching issues"
         # Get keys from JQL search
@@ -194,6 +229,7 @@ if isinstance(data, list):
 
     # Single-issue mode
     require_arg "${1:-}" "assign requires an issue key (e.g. EARL-42)"
+    load_credentials
     local key="$1"
 
     header "Fetching $key"
@@ -234,6 +270,7 @@ if isinstance(data, list):
 }
 
 cmd_queue() {
+    load_credentials
     header "Agent Queue (Prioritized + ai-eligible)"
     "$EBJIRA" issue list \
         --jql "project = $JIRA_PROJECT AND labels = ai-eligible AND status = 'Prioritized' ORDER BY priority DESC, created ASC" \
@@ -241,6 +278,7 @@ cmd_queue() {
 }
 
 cmd_status() {
+    load_credentials
     header "Queued (Prioritized + ai-eligible)"
     "$EBJIRA" issue list \
         --jql "project = $JIRA_PROJECT AND labels = ai-eligible AND status = 'Prioritized' ORDER BY priority DESC" \
@@ -266,8 +304,9 @@ cmd_status() {
 }
 
 cmd_checkins() {
+    load_credentials
     if [ -z "$CHECKIN_EPIC_KEY" ]; then
-        die "CHECKIN_EPIC_KEY not set in .env. Set it to the check-in epic key (e.g. EARL-31)."
+        die "CHECKIN_EPIC_KEY not set in the shell or .env. Set it to the check-in epic key (e.g. EARL-31)."
     fi
     header "Check-In Subtasks ($CHECKIN_EPIC_KEY)"
     "$EBJIRA" epic children "$CHECKIN_EPIC_KEY" --format table
@@ -275,6 +314,7 @@ cmd_checkins() {
 
 cmd_checkin() {
     require_arg "${1:-}" "checkin requires an issue key (e.g. EARL-100)"
+    load_credentials
     header "Check-In: $1"
     "$EBJIRA" issue view "$1" --format table
 }
@@ -282,6 +322,7 @@ cmd_checkin() {
 cmd_feedback() {
     require_arg "${1:-}" "feedback requires an issue key"
     require_arg "${2:-}" "feedback requires a message (e.g. feedback EARL-42 \"Please fix the header\")"
+    load_credentials
     local key="$1"
     local message="$2"
 
@@ -293,6 +334,7 @@ cmd_feedback() {
 
 cmd_approve() {
     require_arg "${1:-}" "approve requires an issue key"
+    load_credentials
     local key="$1"
 
     header "Approving $key"
@@ -304,6 +346,7 @@ cmd_approve() {
 cmd_pause() {
     require_arg "${1:-}" "pause requires an issue key"
     require_arg "${2:-}" "pause requires a reason (e.g. pause EARL-42 \"Missing AC\")"
+    load_credentials
     local key="$1"
     local reason="$2"
 
@@ -315,6 +358,7 @@ cmd_pause() {
 
 cmd_history() {
     require_arg "${1:-}" "history requires an issue key"
+    load_credentials
     header "History: $1"
     "$EBJIRA" issue view "$1" --format table
 }
@@ -324,17 +368,18 @@ cmd_history() {
 command="${1:-help}"
 shift || true
 
-# Each Jira command loads the credentials in its own arm, so the list of commands is kept once.
+# Each Jira command loads the credentials itself, after checking its arguments, so a missing
+# argument is a usage error (exit 2) even before setup.
 case "$command" in
-    assign)    load_credentials; cmd_assign "$@" ;;
-    queue)     load_credentials; cmd_queue ;;
-    status)    load_credentials; cmd_status ;;
-    checkins)  load_credentials; cmd_checkins ;;
-    checkin)   load_credentials; cmd_checkin "$@" ;;
-    feedback)  load_credentials; cmd_feedback "$@" ;;
-    approve)   load_credentials; cmd_approve "$@" ;;
-    pause)     load_credentials; cmd_pause "$@" ;;
-    history)   load_credentials; cmd_history "$@" ;;
+    assign)    cmd_assign "$@" ;;
+    queue)     cmd_queue ;;
+    status)    cmd_status ;;
+    checkins)  cmd_checkins ;;
+    checkin)   cmd_checkin "$@" ;;
+    feedback)  cmd_feedback "$@" ;;
+    approve)   cmd_approve "$@" ;;
+    pause)     cmd_pause "$@" ;;
+    history)   cmd_history "$@" ;;
     help|--help|-h)  cmd_help ;;
     *)         usage_error "Unknown command: $command" ;;
 esac

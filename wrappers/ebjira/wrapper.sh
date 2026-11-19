@@ -42,10 +42,10 @@ if [ ${#SYNC_MOUNT[@]} -eq 0 ]; then
     SYNC_MOUNT=(-v "$DIST_DIR:/app/dist")
 fi
 
-# One order for the Jira settings, set by agent-cli: the shell, then (the token only) the
-# Keychain, then .env. agent-cli works the values out, exports them and sets
-# EBJIRA_USE_SHELL_SETTINGS=1, and only then are they passed in, so the container uses exactly what
-# agent-cli checked. Without this a token kept only in the Keychain never reached the container.
+# agent-cli picks the Jira address, email and token as one set: the shell's when it sets all three,
+# otherwise .env's, with the Keychain filling in a token .env lacks. It exports the whole set and
+# sets EBJIRA_USE_SHELL_SETTINGS=1, and only then are they passed in, so the container uses exactly
+# what agent-cli checked. Without this a token kept only in the Keychain never reached the container.
 # A plain `ebjira` run by hand reads only .env, so a JIRA_* exported for some other tool can't
 # point it at a different Jira. `-e NAME` with no value makes Docker copy it from this
 # environment, so the token is not on the command line where `ps` would show it, and an -e value

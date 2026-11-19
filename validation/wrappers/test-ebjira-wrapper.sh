@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Which Jira settings the ebjira wrapper passes into its container (tap PR #8 review, 2026-11-19).
 #
-# agent-cli works out each setting (the shell, then the Keychain for the token, then .env), exports
-# it and sets EBJIRA_USE_SHELL_SETTINGS=1. Only then does the wrapper pass the shell's values in.
+# agent-cli works out the address, email and token as one set (the shell's when it sets all three,
+# otherwise .env's, with the Keychain filling in a missing token), exports it and sets
+# EBJIRA_USE_SHELL_SETTINGS=1. Only then does the wrapper pass the shell's values in.
 # A plain `ebjira` reads only .env. Stand-in `brew`, `docker` and `security` (the Keychain)
 # commands print what they were asked, so nothing is built or run. Offline, made-up values only.
 set -uo pipefail
