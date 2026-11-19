@@ -181,8 +181,11 @@ class Ebtranscripts < Formula
   end
 
   # Hourly telemetry sync (consent-gated; no-ops until transcripts.toml consent=true).
+  # launchd starts services with only /usr/bin:/bin:/usr/sbin:/sbin on PATH; give it
+  # Homebrew's bin so the sync can find gitleaks (its second-layer secret scan).
   service do
     run [opt_bin/"ebtranscripts", "sync", "--quiet"]
+    environment_variables PATH: std_service_path_env
     run_type :interval
     interval 3600
     log_path var/"log/ebtranscripts.log"
