@@ -19,29 +19,45 @@ ENV_FILE="${EARLBEAR_CONFIG_DIR:-$HOME/.config/earlbear}/.env"
 # Sensitive tokens: read from macOS Keychain first, fall back to .env.
 # Non-secret config (URLs, emails, project keys): read from .env via grep.
 # Never source the whole .env — avoids bulk-exporting all vars into the shell.
+# Loaded only by commands that talk to Jira, so `help` works before setup (the Homebrew formula's
+# test runs `agent-cli help` with no settings file). scripts/tests/test-agent-cli.sh checks both.
 
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: ~/.config/earlbear/.env not found. Run the EarlBear Installer or 'make keychain-to-env'." >&2
-    exit 1
-fi
-
+# A key missing from .env is an empty answer, not a failure: under `set -euo pipefail` grep's
+# "no match" would otherwise end the script silently, before any default or message could run.
 _keychain_get() {
-    security find-generic-password -a "$USER" -s "earlbear.$1" -w 2>/dev/null \
-        || grep -s "^$1=" "$ENV_FILE" | cut -d= -f2-
+    security find-generic-password -a "${USER:-$(id -un)}" -s "earlbear.$1" -w 2>/dev/null \
+        || grep -s "^$1=" "$ENV_FILE" | cut -d= -f2- \
+        || true
 }
 _env_get() {
-    grep -s "^$1=" "$ENV_FILE" | cut -d= -f2-
+    grep -s "^$1=" "$ENV_FILE" | cut -d= -f2- || true
 }
 
-JIRA_BASE_URL="$(_env_get JIRA_BASE_URL)"
-JIRA_USER_EMAIL="$(_env_get JIRA_USER_EMAIL)"
-JIRA_PROJECT="${JIRA_PROJECT:-$(_env_get JIRA_PROJECT)}"
-JIRA_PROJECT="${JIRA_PROJECT:-EARL}"
-JIRA_API_TOKEN="$(_keychain_get JIRA_API_TOKEN)"
+load_credentials() {
+    if [ ! -f "$ENV_FILE" ]; then
+        echo "Error: $ENV_FILE not found. Run the EarlBear Installer or 'make keychain-to-env'." >&2
+        exit 1
+    fi
 
-export JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN
+    JIRA_BASE_URL="$(_env_get JIRA_BASE_URL)"
+    JIRA_USER_EMAIL="$(_env_get JIRA_USER_EMAIL)"
+    JIRA_PROJECT="${JIRA_PROJECT:-$(_env_get JIRA_PROJECT)}"
+    JIRA_PROJECT="${JIRA_PROJECT:-EARL}"
+    JIRA_API_TOKEN="$(_keychain_get JIRA_API_TOKEN)"
 
-CHECKIN_EPIC_KEY="${CHECKIN_EPIC_KEY:-$(_env_get CHECKIN_EPIC_KEY)}"
+    local missing=""
+    [ -n "$JIRA_BASE_URL" ] || missing="$missing JIRA_BASE_URL"
+    [ -n "$JIRA_USER_EMAIL" ] || missing="$missing JIRA_USER_EMAIL"
+    [ -n "$JIRA_API_TOKEN" ] || missing="$missing JIRA_API_TOKEN"
+    if [ -n "$missing" ]; then
+        echo "Error: not set in $ENV_FILE (or, for the token, the Keychain):$missing" >&2
+        exit 1
+    fi
+
+    export JIRA_BASE_URL JIRA_USER_EMAIL JIRA_PROJECT JIRA_API_TOKEN
+
+    CHECKIN_EPIC_KEY="${CHECKIN_EPIC_KEY:-$(_env_get CHECKIN_EPIC_KEY)}"
+}
 
 # ── Colors ──
 
@@ -77,7 +93,7 @@ ${BOLD}agent-cli${RESET} — Admin CLI for the EarlBear cloud agent
 ${BOLD}QUEUE MANAGEMENT${RESET}
   assign ISSUE_KEY          Add ai-eligible label to an issue
   assign --jql "..."        Bulk-assign ai-eligible label via JQL
-  queue                     Show issues queued for agent (To Do + ai-eligible)
+  queue                     Show issues queued for agent (Prioritized + ai-eligible)
 
 ${BOLD}STATUS${RESET}
   status                    Dashboard: queued, drafting, in-review, rework, paused
@@ -285,7 +301,7 @@ cmd_pause() {
     local key="$1"
     local reason="$2"
 
-    header "Blocking $key"
+    header "Pausing $key"
     "$EBJIRA" issue transition "$key" "Blocked" --comment "$reason" \
         || die "Failed to transition $key to Blocked"
     echo "${GREEN}OK${RESET} $key -> Blocked with reason: $reason"
@@ -302,16 +318,17 @@ cmd_history() {
 command="${1:-help}"
 shift || true
 
+# Each Jira command loads the credentials in its own arm, so the list of commands is kept once.
 case "$command" in
-    assign)    cmd_assign "$@" ;;
-    queue)     cmd_queue ;;
-    status)    cmd_status ;;
-    checkins)  cmd_checkins ;;
-    checkin)   cmd_checkin "$@" ;;
-    feedback)  cmd_feedback "$@" ;;
-    approve)   cmd_approve "$@" ;;
-    pause)     cmd_pause "$@" ;;
-    history)   cmd_history "$@" ;;
+    assign)    load_credentials; cmd_assign "$@" ;;
+    queue)     load_credentials; cmd_queue ;;
+    status)    load_credentials; cmd_status ;;
+    checkins)  load_credentials; cmd_checkins ;;
+    checkin)   load_credentials; cmd_checkin "$@" ;;
+    feedback)  load_credentials; cmd_feedback "$@" ;;
+    approve)   load_credentials; cmd_approve "$@" ;;
+    pause)     load_credentials; cmd_pause "$@" ;;
+    history)   load_credentials; cmd_history "$@" ;;
     help|--help|-h)  cmd_help ;;
     *)         usage_error "Unknown command: $command" ;;
 esac

@@ -163,7 +163,8 @@ Migrate to 1Password CLI (Option A) when team grows to ≥2 developers.
 - `src/ebdocs/` ← `../earlbear-clis/gdocs-cli/`
 - `src/ebshop/` ← `../earlbear-clis/shopify-cli/`
 - `src/ebdeck/` ← `../earlbear-clis/deck-cli/`
-- `src/agent-cli/` ← `../earlbear/bin/agent-cli`
+- `src/ebtranscripts/` ← `../earlbear-clis/transcripts-cli/`
+- `src/agent-cli/agent-cli.sh` ← `../earlbear-claude-agent/bin/agent-cli`
 
 The Claude plugins are **not** copied here. The `earlbear-plugins` formula installs only
 `scripts/install-plugins.sh`, which adds the private GitHub marketplace
